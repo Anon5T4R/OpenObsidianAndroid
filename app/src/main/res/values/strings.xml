@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenObsidian</string>
+    <string name="welcome_tagline">Your markdown vault, native and fast.</string>
+    <string name="open_vault">Open Vault</string>
+    <string name="reopen_vault">Reopen %1$s</string>
+    <string name="open_other_vault">Open another vault</string>
+    <string name="recent_vaults">Recent vaults</string>
+    <string name="forget_vault">Forget</string>
+    <string name="no_vaults_yet">No vaults yet. Open a folder to begin.</string>
+</resources>

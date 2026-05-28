@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hexagon ⬡ outline — white stroke on transparent background.
+  Canvas: 108 × 108dp (adaptive icon spec).
+  Safe zone radius: 33dp from center (54,54).
+  Hexagon inscribed radius: 30dp → all vertices inside safe zone.
+
+  Pointy-top hexagon vertices (r=30):
+    top        (54, 24)
+    top-right  (80, 39)   [54 + 30·sin60°, 54 − 30·cos60°]
+    bot-right  (80, 69)
+    bottom     (54, 84)
+    bot-left   (28, 69)
+    top-left   (28, 39)
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,24 L80,39 L80,69 L54,84 L28,69 L28,39 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:fillColor="#00000000"/>
+</vector>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Persisted SAF URIs survive backups. Vault content itself lives in the
+         user-chosen folder, not in our app data. -->
+    <include domain="sharedpref" path="."/>
+    <include domain="file" path="datastore/"/>
+</full-backup-content>
