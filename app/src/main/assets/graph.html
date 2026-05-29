@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    #graph { width: 100vw; height: 100vh; display: block; touch-action: none; }
+    .link { stroke-opacity: 1; }
+    .node circle { cursor: pointer; }
+    .label {
+      font-family: -apple-system, Roboto, sans-serif;
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
+  <script src="d3.v7.min.js"></script>
+</head>
+<body>
+  <svg id="graph"></svg>
+  <script>
+    let simulation = null;
+
+    // Called from Kotlin: initGraph(JSON.stringify({nodes, links}), JSON.stringify(theme))
+    function initGraph(dataJson, themeJson) {
+      const data  = JSON.parse(dataJson);
+      const theme = JSON.parse(themeJson);
+
+      const svg = d3.select("#graph");
+      svg.selectAll("*").remove();
+      document.body.style.background = theme.bg;
+
+      const width  = window.innerWidth;
+      const height = window.innerHeight;
+
+      const container = svg.append("g");
+
+      // Zoom + pan (works with touch).
+      const zoom = d3.zoom()
+        .scaleExtent([0.1, 6])
+        .on("zoom", (event) => {
+          container.attr("transform", event.transform);
+          const k = event.transform.k;
+          // Fade labels out when zoomed far out.
+          const alpha = Math.max(0, Math.min(1, (k - 0.4) / 0.4));
+          labels.style("opacity", alpha);
+        });
+      svg.call(zoom);
+
+      const nodeById = new Map(data.nodes.map(n => [n.id, n]));
+      // Resolve link endpoints (ids -> node objects).
+      const links = data.links.map(l => ({
+        source: nodeById.get(l.source),
+        target: nodeById.get(l.target),
+      })).filter(l => l.source && l.target);
+
+      const degree = new Map(data.nodes.map(n => [n.id, 0]));
+      links.forEach(l => {
+        degree.set(l.source.id, (degree.get(l.source.id) || 0) + 1);
+        degree.set(l.target.id, (degree.get(l.target.id) || 0) + 1);
+      });
+      const radiusOf = (n) => {
+        const base = 5 + Math.sqrt(degree.get(n.id) || 0) * 2.2;
+        return n.active ? base * 1.6 : base;
+      };
+
+      simulation = d3.forceSimulation(data.nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(60).strength(0.4))
+        .force("charge", d3.forceManyBody().strength(-180))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 6))
+        .force("x", d3.forceX(width / 2).strength(0.04))
+        .force("y", d3.forceY(height / 2).strength(0.04));
+
+      const link = container.append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("class", "link")
+        .attr("stroke", theme.edge)
+        .attr("stroke-width", 1.2);
+
+      const node = container.append("g")
+        .attr("class", "nodes")
+        .selectAll("g")
+        .data(data.nodes)
+        .join("g")
+        .attr("class", "node");
+
+      let dragged = false;
+
+      node.append("circle")
+        .attr("r", radiusOf)
+        .attr("fill", d => d.active ? theme.active : theme.node)
+        .on("click", (event, d) => {
+          if (!dragged && window.AndroidBridge) {
+            window.AndroidBridge.onNodeClick(d.id);
+          }
+        });
+
+      const labels = node.append("text")
+        .attr("class", "label")
+        .attr("text-anchor", "middle")
+        .attr("dy", d => radiusOf(d) + 11)
+        .attr("font-size", "10px")
+        .attr("font-weight", d => d.active ? "700" : "400")
+        .attr("fill", theme.label)
+        .text(d => d.label);
+
+      node.call(d3.drag()
+        .on("start", (event, d) => {
+          dragged = false;
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          dragged = true;
+          d.fx = event.x; d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        }));
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        node.attr("transform", d => `translate(${d.x},${d.y})`);
+      });
+
+      // Center the active node after the layout settles.
+      if (data.nodes.some(n => n.active)) {
+        setTimeout(() => {
+          const a = data.nodes.find(n => n.active);
+          if (a) {
+            const t = d3.zoomIdentity
+              .translate(width / 2 - a.x, height / 2 - a.y);
+            svg.transition().duration(500).call(zoom.transform, t);
+          }
+        }, 1200);
+      }
+    }
+  </script>
+</body>
+</html>
