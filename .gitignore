@@ -15,3 +15,11 @@ local.properties
 *.log
 .DS_Store
 captures/
+
+# Release signing keystore (keep private)
+*.jks
+*.keystore
+
+# Built APK artifacts (distributed via GitHub Releases)
+*.apk
+*.idsig
