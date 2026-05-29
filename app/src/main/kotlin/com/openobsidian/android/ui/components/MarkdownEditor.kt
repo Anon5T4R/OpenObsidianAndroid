@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,8 +19,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalTextToolbar
+import androidx.compose.ui.platform.TextToolbar
+import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
@@ -32,8 +37,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,18 +146,17 @@ fun MarkdownEditor(
         }
     } else null
 
-    // ── Selection state ──────────────────────────────────────────────────────
-    val hasSelection = !tfv.selection.collapsed && tfv.selection.length > 0
-
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     fun wrapSelection(before: String, after: String) {
         val sel  = tfv.selection
+        if (sel.collapsed) return
         val text = tfv.text
         val selected = text.substring(sel.min, sel.max)
         val newText  = text.substring(0, sel.min) + before + selected + after + text.substring(sel.max)
-        val newEnd   = sel.min + before.length + selected.length + after.length
-        tfv = TextFieldValue(newText, selection = TextRange(sel.min + before.length, newEnd))
+        val cursor   = sel.min + before.length + selected.length + after.length
+        // Collapse the cursor after the inserted markup so the selection menu dismisses.
+        tfv = TextFieldValue(newText, selection = TextRange(cursor))
         onContentChange(newText)
     }
 
@@ -206,88 +217,158 @@ fun MarkdownEditor(
         }
     }
 
+    // Custom text toolbar: the native selection menu, plus markdown actions.
+    val mdToolbar = remember { MarkdownTextToolbar() }
+
     // ── Layout ────────────────────────────────────────────────────────────────
-    Column(modifier = modifier) {
+    CompositionLocalProvider(LocalTextToolbar provides mdToolbar) {
+        Column(modifier = modifier) {
 
-        // Selection toolbar (top)
-        AnimatedVisibility(visible = hasSelection && !showSlash) {
-            SelectionToolbar(
-                onBold    = { wrapSelection("**", "**") },
-                onItalic  = { wrapSelection("*",  "*")  },
-                onStrike  = { wrapSelection("~~", "~~") },
-                onCode    = { wrapSelection("`",  "`")  },
-                onWikilink = { wrapSelection("[[", "]]") },
-                onQuote   = { wrapSelection("> ", "")   },
-            )
+            // Text field
+            Box(modifier = Modifier.weight(1f)) {
+                BasicTextField(
+                    value          = tfv,
+                    onValueChange  = { onTfvChange(it) },
+                    modifier       = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    textStyle            = baseStyle,
+                    cursorBrush          = SolidColor(colors.primary),
+                    visualTransformation = transform,
+                    decorationBox        = { innerTextField ->
+                        if (tfv.text.isEmpty()) {
+                            Text(
+                                "Start writing…",
+                                style = baseStyle.copy(color = colors.onSurface.copy(alpha = 0.35f)),
+                            )
+                        }
+                        innerTextField()
+                    },
+                )
+            }
+
+            // Slash command picker (bottom)
+            AnimatedVisibility(visible = showSlash) {
+                SlashCommandPicker(
+                    query     = slashQuery,
+                    onSelect  = { cmd -> insertSnippet(cmd) },
+                    onDismiss = { showSlash = false },
+                )
+            }
         }
 
-        // Text field
-        Box(modifier = Modifier.weight(1f)) {
-            BasicTextField(
-                value          = tfv,
-                onValueChange  = { onTfvChange(it) },
-                modifier       = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                textStyle            = baseStyle,
-                cursorBrush          = SolidColor(colors.primary),
-                visualTransformation = transform,
-                decorationBox        = { innerTextField ->
-                    if (tfv.text.isEmpty()) {
-                        Text(
-                            "Start writing…",
-                            style = baseStyle.copy(color = colors.onSurface.copy(alpha = 0.35f)),
-                        )
-                    }
-                    innerTextField()
-                },
-            )
-        }
-
-        // Slash command picker (bottom)
-        AnimatedVisibility(visible = showSlash) {
-            SlashCommandPicker(
-                query     = slashQuery,
-                onSelect  = { cmd -> insertSnippet(cmd) },
-                onDismiss = { showSlash = false },
+        // Floating selection menu (replaces the system one): standard actions
+        // (copy/cut/paste/select-all) + markdown formatting.
+        if (mdToolbar.status == TextToolbarStatus.Shown) {
+            SelectionPopup(
+                toolbar    = mdToolbar,
+                onBold     = { wrapSelection("**", "**"); mdToolbar.hide() },
+                onItalic   = { wrapSelection("*",  "*");  mdToolbar.hide() },
+                onStrike   = { wrapSelection("~~", "~~"); mdToolbar.hide() },
+                onCode     = { wrapSelection("`",  "`");  mdToolbar.hide() },
+                onWikilink = { wrapSelection("[[", "]]"); mdToolbar.hide() },
             )
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Selection toolbar
+// Custom TextToolbar — drives the floating selection menu
 // ─────────────────────────────────────────────────────────────────────────────
 
+private class MarkdownTextToolbar : TextToolbar {
+    var rect by mutableStateOf(Rect.Zero)
+        private set
+    var onCopy:      (() -> Unit)? by mutableStateOf(null); private set
+    var onPaste:     (() -> Unit)? by mutableStateOf(null); private set
+    var onCut:       (() -> Unit)? by mutableStateOf(null); private set
+    var onSelectAll: (() -> Unit)? by mutableStateOf(null); private set
+
+    private var _status by mutableStateOf(TextToolbarStatus.Hidden)
+    override val status: TextToolbarStatus get() = _status
+
+    override fun showMenu(
+        rect: Rect,
+        onCopyRequested: (() -> Unit)?,
+        onPasteRequested: (() -> Unit)?,
+        onCutRequested: (() -> Unit)?,
+        onSelectAllRequested: (() -> Unit)?,
+    ) {
+        this.rect        = rect
+        this.onCopy      = onCopyRequested
+        this.onPaste     = onPasteRequested
+        this.onCut       = onCutRequested
+        this.onSelectAll = onSelectAllRequested
+        _status          = TextToolbarStatus.Shown
+    }
+
+    override fun hide() { _status = TextToolbarStatus.Hidden }
+}
+
 @Composable
-private fun SelectionToolbar(
+private fun SelectionPopup(
+    toolbar: MarkdownTextToolbar,
     onBold: () -> Unit,
     onItalic: () -> Unit,
     onStrike: () -> Unit,
     onCode: () -> Unit,
     onWikilink: () -> Unit,
-    onQuote: () -> Unit,
 ) {
-    Surface(
-        color     = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 2.dp,
-        modifier  = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier                = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-            horizontalArrangement   = Arrangement.Start,
-            verticalAlignment       = Alignment.CenterVertically,
-        ) {
-            FormatButton(icon = Icons.Default.FormatBold,          desc = "Bold",          onClick = onBold)
-            FormatButton(icon = Icons.Default.FormatItalic,        desc = "Italic",        onClick = onItalic)
-            FormatButton(icon = Icons.Default.FormatStrikethrough, desc = "Strikethrough", onClick = onStrike)
-            FormatButton(icon = Icons.Default.Code,                desc = "Code",          onClick = onCode)
-            FormatButton(icon = Icons.Default.Link,                desc = "Wikilink",      onClick = onWikilink)
-            FormatButton(icon = Icons.Default.FormatQuote,         desc = "Quote",         onClick = onQuote)
+    val positionProvider = remember(toolbar.rect) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowSize: IntSize,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize,
+            ): IntOffset {
+                val r = toolbar.rect
+                val x = r.left.toInt()
+                    .coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+                var y = r.top.toInt() - popupContentSize.height - 8
+                if (y < 0) y = r.bottom.toInt() + 8
+                return IntOffset(x, y)
+            }
         }
+    }
+
+    Popup(
+        popupPositionProvider = positionProvider,
+        properties            = PopupProperties(focusable = false),
+        onDismissRequest      = { toolbar.hide() },
+    ) {
+        Surface(
+            shape           = MaterialTheme.shapes.small,
+            color           = MaterialTheme.colorScheme.surfaceVariant,
+            shadowElevation  = 6.dp,
+            tonalElevation   = 3.dp,
+        ) {
+            Row(
+                modifier          = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                toolbar.onCut?.let     { MenuTextButton("Cut")        { it() } }
+                toolbar.onCopy?.let    { MenuTextButton("Copy")       { it() } }
+                toolbar.onPaste?.let   { MenuTextButton("Paste")      { it() } }
+                toolbar.onSelectAll?.let { MenuTextButton("Select all") { it() } }
+
+                FormatButton(Icons.Default.FormatBold,          "Bold",          onBold)
+                FormatButton(Icons.Default.FormatItalic,        "Italic",        onItalic)
+                FormatButton(Icons.Default.FormatStrikethrough, "Strikethrough", onStrike)
+                FormatButton(Icons.Default.Code,                "Code",          onCode)
+                FormatButton(Icons.Default.Link,                "Wikilink",      onWikilink)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuTextButton(label: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 10.dp)) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
     }
 }
 
