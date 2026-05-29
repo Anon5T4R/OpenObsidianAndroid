@@ -119,6 +119,7 @@ fun VaultScreen(
             onCreateFolder = { pu, n -> vm.createFolder(pu, n) },
             onRenameNode   = { node, n -> vm.renameNode(node, n) },
             onDeleteNode   = { vm.deleteNode(it) },
+            onMoveNode     = { node, target -> vm.moveNode(node, target) },
             onTogglePin    = { vm.togglePin(it) },
             onDailyNote    = { vm.openDailyNote() },
             onOpenGraph    = { showGraph = true },

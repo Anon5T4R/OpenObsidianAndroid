@@ -363,6 +363,82 @@ class VaultViewModel(
         }
     }
 
+    /**
+     * Move a file/folder into [targetDir]. Carefully guards the common foot-guns:
+     *  - dropping onto the folder it already lives in → silent no-op,
+     *  - moving a folder into itself or one of its descendants → blocked,
+     *  - a name collision in the destination → blocked with a message.
+     * On success the tree is reloaded; an affected open note is closed.
+     */
+    fun moveNode(node: Node, targetDir: Uri) {
+        viewModelScope.launch {
+            val tree         = _state.value.tree ?: return@launch
+            val sourceParent = findParentUri(node, tree)
+
+            // No-op: already in the target folder.
+            if (sourceParent == targetDir) return@launch
+
+            // Can't move a folder into itself or a descendant.
+            if (node is Node.Dir && isSelfOrDescendant(node, targetDir)) {
+                toast("Can't move a folder into itself")
+                return@launch
+            }
+
+            // Name collision in the destination.
+            if (SafFs.hasChildNamed(appContext, targetDir, node.name)) {
+                toast("\"${node.name}\" already exists there")
+                return@launch
+            }
+
+            val newUri = runCatching {
+                SafFs.move(appContext, node.uri, sourceParent, targetDir)
+            }.getOrNull()
+
+            if (newUri == null) {
+                toast("Couldn't move \"${node.name}\"")
+                return@launch
+            }
+
+            // Close the open note if it was moved (its URI is now stale).
+            val active = _state.value.activeFile
+            if (active != null && (active.uri == node.uri ||
+                    (node is Node.Dir && isInSubtree(node, active.uri)))
+            ) {
+                _state.update {
+                    it.copy(activeFile = null, activeContent = "", contentLoading = false, isDirty = false)
+                }
+            }
+            loadTree()
+        }
+    }
+
+    private fun toast(message: String) {
+        android.widget.Toast.makeText(appContext, message, android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    /** The directory URI that currently holds [target] (vault root if top-level). */
+    private fun findParentUri(target: Node, tree: Tree): Uri {
+        fun search(nodes: List<Node>, parent: Uri): Uri? {
+            for (n in nodes) {
+                if (n.uri == target.uri) return parent
+                if (n is Node.Dir) search(n.children, n.uri)?.let { return it }
+            }
+            return null
+        }
+        return search(tree.root, tree.rootUri) ?: tree.rootUri
+    }
+
+    private fun isSelfOrDescendant(dir: Node.Dir, targetUri: Uri): Boolean =
+        targetUri == dir.uri || isInSubtree(dir, targetUri)
+
+    private fun isInSubtree(dir: Node.Dir, uri: Uri): Boolean {
+        for (child in dir.children) {
+            if (child.uri == uri) return true
+            if (child is Node.Dir && isInSubtree(child, uri)) return true
+        }
+        return false
+    }
+
     fun deleteNode(node: Node) {
         viewModelScope.launch {
             runCatching { SafFs.delete(appContext, node.uri) }

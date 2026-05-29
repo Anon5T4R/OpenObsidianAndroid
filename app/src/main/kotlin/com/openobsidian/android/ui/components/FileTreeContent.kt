@@ -142,6 +142,7 @@ private sealed class PendingDialog {
     data class CreateFolder(val parentUri: Uri) : PendingDialog()
     data class Rename(val node: Node)           : PendingDialog()
     data class ConfirmDelete(val node: Node)    : PendingDialog()
+    data class Move(val node: Node)             : PendingDialog()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,6 +163,7 @@ fun FileTreeContent(
     onCreateFolder: (parentUri: Uri, name: String) -> Unit,
     onRenameNode: (node: Node, newName: String) -> Unit,
     onDeleteNode: (node: Node) -> Unit,
+    onMoveNode: (node: Node, targetDir: Uri) -> Unit = { _, _ -> },
     onTogglePin: (Node.File) -> Unit = {},
     onDailyNote: () -> Unit = {},
     onOpenGraph: () -> Unit = {},
@@ -299,6 +301,7 @@ fun FileTreeContent(
                                 onNewFile   = { dialog = PendingDialog.CreateFile(row.node.uri) },
                                 onNewFolder = { dialog = PendingDialog.CreateFolder(row.node.uri) },
                                 onRename    = { dialog = PendingDialog.Rename(row.node) },
+                                onMove      = { dialog = PendingDialog.Move(row.node) },
                                 onDelete    = { dialog = PendingDialog.ConfirmDelete(row.node) },
                             )
                             is Row.FileRow -> FileItem(
@@ -306,6 +309,7 @@ fun FileTreeContent(
                                 isActive    = activeFileUri == row.node.uri.toString(),
                                 onClick     = { onFileClick(row.node) },
                                 onRename    = { dialog = PendingDialog.Rename(row.node) },
+                                onMove      = { dialog = PendingDialog.Move(row.node) },
                                 onDelete    = { dialog = PendingDialog.ConfirmDelete(row.node) },
                                 onTogglePin = { onTogglePin(row.node) },
                             )
@@ -341,6 +345,12 @@ fun FileTreeContent(
             name      = d.node.name,
             isDir     = d.node is Node.Dir,
             onConfirm = { dialog = null; onDeleteNode(d.node) },
+            onDismiss = { dialog = null },
+        )
+        is PendingDialog.Move -> if (tree != null) MovePickerDialog(
+            tree      = tree,
+            node      = d.node,
+            onConfirm = { target -> dialog = null; onMoveNode(d.node, target) },
             onDismiss = { dialog = null },
         )
         null -> {}
@@ -395,6 +405,7 @@ private fun DirItem(
     onNewFile: () -> Unit,
     onNewFolder: () -> Unit,
     onRename: () -> Unit,
+    onMove: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -456,6 +467,11 @@ private fun DirItem(
                 onClick     = { showMenu = false; onRename() },
             )
             DropdownMenuItem(
+                text        = { Text("Move to…") },
+                leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
+                onClick     = { showMenu = false; onMove() },
+            )
+            DropdownMenuItem(
                 text        = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
                     Icon(
@@ -477,6 +493,7 @@ private fun FileItem(
     isActive: Boolean,
     onClick: () -> Unit,
     onRename: () -> Unit,
+    onMove: () -> Unit,
     onDelete: () -> Unit,
     onTogglePin: () -> Unit = {},
 ) {
@@ -547,6 +564,11 @@ private fun FileItem(
                 text        = { Text("Rename") },
                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                 onClick     = { showMenu = false; onRename() },
+            )
+            DropdownMenuItem(
+                text        = { Text("Move to…") },
+                leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
+                onClick     = { showMenu = false; onMove() },
             )
             DropdownMenuItem(
                 text        = { Text("Delete", color = MaterialTheme.colorScheme.error) },
@@ -630,6 +652,79 @@ private fun ConfirmDeleteDialog(
                 Text("Delete", color = MaterialTheme.colorScheme.error)
             }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Move picker
+// ─────────────────────────────────────────────────────────────────────────────
+
+private data class MoveTarget(val uri: Uri, val label: String, val depth: Int)
+
+/** Destination folders for moving [moving]; excludes the folder itself + descendants. */
+private fun buildMoveTargets(tree: Tree, moving: Node): List<MoveTarget> {
+    val excluded = HashSet<String>()
+    if (moving is Node.Dir) {
+        fun collect(d: Node.Dir) {
+            excluded += d.uri.toString()
+            d.children.filterIsInstance<Node.Dir>().forEach { collect(it) }
+        }
+        collect(moving)
+    }
+    val out = ArrayList<MoveTarget>()
+    out += MoveTarget(tree.rootUri, tree.name, 0)
+    fun walk(nodes: List<Node>, depth: Int) {
+        nodes.filterIsInstance<Node.Dir>().sortedBy { it.name.lowercase() }.forEach { d ->
+            if (d.uri.toString() in excluded) return@forEach
+            out += MoveTarget(d.uri, d.name, depth)
+            walk(d.children, depth + 1)
+        }
+    }
+    walk(tree.root, 1)
+    return out
+}
+
+@Composable
+private fun MovePickerDialog(
+    tree: Tree,
+    node: Node,
+    onConfirm: (Uri) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val targets = remember(tree, node) { buildMoveTargets(tree, node) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Move \"${if (node is Node.File) node.displayName else node.name}\" to…") },
+        text  = {
+            LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                items(targets, key = { it.uri.toString() }) { t ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onConfirm(t.uri) }
+                            .padding(start = (8 + t.depth * 14).dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            if (t.depth == 0) Icons.Default.Home else Icons.Default.Folder,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint     = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            t.label,
+                            style    = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

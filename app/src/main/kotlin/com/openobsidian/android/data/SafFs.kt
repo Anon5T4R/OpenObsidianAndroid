@@ -271,6 +271,34 @@ object SafFs {
     suspend fun rename(context: Context, docUri: Uri, newName: String): Uri? = withContext(Dispatchers.IO) {
         DocumentsContract.renameDocument(context.contentResolver, docUri, newName)
     }
+
+    // ── Move ──────────────────────────────────────────────────────────────
+
+    /** True if [targetDir] already contains an entry named [name] (case-insensitive). */
+    suspend fun hasChildNamed(context: Context, targetDir: Uri, name: String): Boolean =
+        withContext(Dispatchers.IO) {
+            listChildren(context, targetDir).any { it.name.equals(name, ignoreCase = true) }
+        }
+
+    /**
+     * Move [sourceUri] from [sourceParent] into [targetParent].
+     * Parent URIs may be tree URIs (vault root) or document URIs (subfolders);
+     * both are normalised to document URIs as moveDocument requires.
+     * Returns the moved document's URI, or null if the provider rejected the move.
+     */
+    suspend fun move(
+        context: Context,
+        sourceUri: Uri,
+        sourceParent: Uri,
+        targetParent: Uri,
+    ): Uri? = withContext(Dispatchers.IO) {
+        DocumentsContract.moveDocument(
+            context.contentResolver,
+            sourceUri,
+            toDocumentUri(sourceParent),
+            toDocumentUri(targetParent),
+        )
+    }
 }
 
 /** Raw cursor row — internal. */
