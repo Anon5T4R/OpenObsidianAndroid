@@ -3,6 +3,7 @@ package com.openobsidian.android.ui.components
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,6 +55,9 @@ private sealed class Row(open val key: String, open val depth: Int) {
         val isPinned: Boolean = false,
         override val key: String = node.uri.toString(),
     ) : Row(key, depth)
+
+    /** Sidebar entry that opens the graph view — sits after the pinned section. */
+    data object GraphAction : Row("action:graph", 0)
 }
 
 private fun findFile(nodes: List<Node>, uri: String): Node.File? {
@@ -76,17 +80,19 @@ private fun buildRows(
     val out    = ArrayList<Row>()
     val needle = filter.trim().lowercase()
 
-    // ── Pinned section (only when no filter) ──────────────────────────────
-    if (needle.isEmpty() && pinnedUris.isNotEmpty()) {
+    // ── Pinned section + graph access (only when no filter) ───────────────
+    if (needle.isEmpty()) {
         val pinned = pinnedUris.mapNotNull { findFile(tree.root, it) }
         if (pinned.isNotEmpty()) {
             out += Row.SectionHeader("Pinned", "section:pinned")
             pinned.forEach { f ->
                 out += Row.FileRow(f, 0, isPinned = true, key = "pin:${f.uri}")
             }
-            if (tree.root.isNotEmpty()) {
-                out += Row.SectionHeader("All Files", "section:all")
-            }
+        }
+        // Graph view access — placed right after the pinned notes.
+        out += Row.GraphAction
+        if (pinned.isNotEmpty() && tree.root.isNotEmpty()) {
+            out += Row.SectionHeader("All Files", "section:all")
         }
     }
 
@@ -158,6 +164,7 @@ fun FileTreeContent(
     onDeleteNode: (node: Node) -> Unit,
     onTogglePin: (Node.File) -> Unit = {},
     onDailyNote: () -> Unit = {},
+    onOpenGraph: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable {
@@ -282,6 +289,7 @@ fun FileTreeContent(
                     items(items = rows, key = { it.key }) { row ->
                         when (row) {
                             is Row.SectionHeader -> SectionHeaderItem(row.title)
+                            is Row.GraphAction -> GraphActionItem(onClick = onOpenGraph)
                             is Row.DirRow -> DirItem(
                                 row         = row,
                                 onToggle    = {
@@ -342,6 +350,32 @@ fun FileTreeContent(
 // ─────────────────────────────────────────────────────────────────────────────
 // Row items
 // ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GraphActionItem(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp, vertical = 1.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(start = 12.dp, end = 10.dp, top = 9.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Default.AccountTree,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint     = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            "Graph view",
+            style      = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
 
 @Composable
 private fun SectionHeaderItem(title: String) {

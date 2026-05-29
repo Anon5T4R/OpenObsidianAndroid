@@ -121,6 +121,7 @@ fun VaultScreen(
             onDeleteNode   = { vm.deleteNode(it) },
             onTogglePin    = { vm.togglePin(it) },
             onDailyNote    = { vm.openDailyNote() },
+            onOpenGraph    = { showGraph = true },
         )
     }
 
@@ -170,9 +171,6 @@ fun VaultScreen(
                             }
                         }
                         if (state.tree != null) {
-                            IconButton(onClick = { showGraph = true }) {
-                                Icon(Icons.Default.AccountTree, contentDescription = "Graph view")
-                            }
                             IconButton(onClick = { vm.navBack() },    enabled = state.canNavBack) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
