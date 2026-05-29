@@ -69,6 +69,7 @@ private val SLASH_COMMANDS = listOf(
     SlashCmd(Icons.Default.FormatBold,           "Bold",            "**bold**",            4),
     SlashCmd(Icons.Default.FormatItalic,         "Italic",          "*italic*",            7),
     SlashCmd(Icons.Default.FormatStrikethrough,  "Strikethrough",   "~~text~~",            6),
+    SlashCmd(Icons.Default.FormatColorFill,      "Highlight",       "==text==",            2),
     SlashCmd(Icons.Default.Code,                 "Inline code",     "`code`",              5),
     SlashCmd(Icons.Default.DataObject,           "Code block",      "```\n\n```",          4),
     SlashCmd(Icons.Default.TableChart,           "Table",           "| Col 1 | Col 2 |\n|---|---|\n| Cell | Cell |"),
