@@ -190,6 +190,9 @@ fun VaultScreen(
                 modifier = Modifier
                     .padding(inner)
                     .fillMaxSize()
+                    // Shrink content above the soft keyboard so the end of a
+                    // note stays visible while typing (edge-to-edge window).
+                    .imePadding()
                     // Hardware keyboard shortcuts
                     .onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown) {
