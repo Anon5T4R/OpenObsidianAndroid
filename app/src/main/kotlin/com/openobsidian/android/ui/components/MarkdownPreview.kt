@@ -5,9 +5,13 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.text.SpannableStringBuilder
 import android.text.Spannable
+import android.text.Spanned
 import android.text.style.BackgroundColorSpan
+import android.text.style.ClickableSpan
+import android.view.MotionEvent
 import android.widget.ScrollView
 import android.widget.TextView
+import io.noties.markwon.ext.tasklist.TaskListSpan
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -49,6 +53,7 @@ fun MarkdownPreview(
     modifier: Modifier = Modifier,
     onWikilinkClick: (String) -> Unit = {},
     resolveImage: ((String) -> Uri?)? = null,
+    onToggleCheckbox: ((String) -> Unit)? = null,
 ) {
     val context   = LocalContext.current
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
@@ -57,9 +62,13 @@ fun MarkdownPreview(
     // Stable callback refs — updated after each composition
     val callbackRef      = remember { mutableStateOf(onWikilinkClick) }
     val imageResolverRef = remember { mutableStateOf(resolveImage) }
+    val contentRef       = remember { mutableStateOf(content) }
+    val toggleRef        = remember { mutableStateOf(onToggleCheckbox) }
     SideEffect {
         callbackRef.value      = onWikilinkClick
         imageResolverRef.value = resolveImage
+        contentRef.value       = content
+        toggleRef.value        = onToggleCheckbox
     }
 
     val markwon = remember(context) {
@@ -144,6 +153,37 @@ fun MarkdownPreview(
                     android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                 )
             }
+            // Tap-to-toggle task-list checkboxes. Maps the tapped rendered line
+            // back to the Nth `- [ ]` in the source and flips it.
+            tv.setOnTouchListener { _, ev ->
+                if (ev.action != MotionEvent.ACTION_UP) return@setOnTouchListener false
+                val toggle = toggleRef.value ?: return@setOnTouchListener false
+                val layout = tv.layout ?: return@setOnTouchListener false
+                val text   = tv.text as? Spanned ?: return@setOnTouchListener false
+
+                val xCoord = ev.x - tv.totalPaddingLeft + tv.scrollX
+                val yCoord = (ev.y - tv.totalPaddingTop + tv.scrollY).toInt()
+                val line      = layout.getLineForVertical(yCoord)
+                val lineStart = layout.getLineStart(line)
+
+                val taskAtLine = text.getSpans(lineStart, lineStart, TaskListSpan::class.java)
+                if (taskAtLine.isEmpty()) return@setOnTouchListener false
+
+                // If the tap landed on a link inside the line, let it navigate instead.
+                val offset = layout.getOffsetForHorizontal(line, xCoord)
+                if (text.getSpans(offset, offset, ClickableSpan::class.java).isNotEmpty()) {
+                    return@setOnTouchListener false
+                }
+
+                val all = text.getSpans(0, text.length, TaskListSpan::class.java)
+                    .sortedBy { text.getSpanStart(it) }
+                val idx = all.indexOf(taskAtLine[0])
+                if (idx < 0) return@setOnTouchListener false
+
+                val newContent = toggleTaskInMarkdown(contentRef.value, idx)
+                if (newContent != contentRef.value) toggle(newContent)
+                true
+            }
             ScrollView(ctx).apply {
                 layoutParams = android.view.ViewGroup.LayoutParams(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,
@@ -198,6 +238,22 @@ private fun preprocessMarkdown(
     }
 
     return out
+}
+
+/**
+ * Flips the checkbox state of the [taskIndex]-th GFM task item in [src].
+ * Order matches Markwon's top-to-bottom TaskListSpan ordering.
+ */
+private val TASK_REGEX = Regex("^(\\s*[-*+]\\s+\\[)([ xX])(])", RegexOption.MULTILINE)
+
+private fun toggleTaskInMarkdown(src: String, taskIndex: Int): String {
+    var i = 0
+    return TASK_REGEX.replace(src) { m ->
+        if (i++ == taskIndex) {
+            val flipped = if (m.groupValues[2] == " ") "x" else " "
+            "${m.groupValues[1]}$flipped${m.groupValues[3]}"
+        } else m.value
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -93,6 +93,17 @@ fun VaultScreen(
         return
     }
 
+    // ── Android Back: navigate within the app instead of closing it ───────
+    // Priority: open drawer → close it; nav history → step back; open note → close it.
+    // Disabled (lets the system exit) only at the root with nothing open.
+    BackHandler(enabled = drawerState.isOpen || state.activeFile != null) {
+        when {
+            drawerState.isOpen     -> scope.launch { drawerState.close() }
+            state.canNavBack       -> vm.navBack()
+            state.activeFile != null -> vm.closeFile()
+        }
+    }
+
     // ── Shared drawer content ─────────────────────────────────────────────
     val drawerContent: @Composable () -> Unit = {
         FileTreeContent(
@@ -427,20 +438,22 @@ private fun NoteArea(
                 content, onContentChange, Modifier.fillMaxSize()
             )
             ViewMode.PREVIEW -> MarkdownPreview(
-                content         = content,
-                modifier        = Modifier.fillMaxSize(),
-                onWikilinkClick = onWikilinkClick,
-                resolveImage    = resolveImage,
+                content          = content,
+                modifier         = Modifier.fillMaxSize(),
+                onWikilinkClick  = onWikilinkClick,
+                resolveImage     = resolveImage,
+                onToggleCheckbox = onContentChange,
             )
             ViewMode.SPLIT -> {
                 Row(Modifier.fillMaxSize()) {
                     MarkdownEditor(content, onContentChange, Modifier.weight(1f).fillMaxHeight())
                     VerticalDivider()
                     MarkdownPreview(
-                        content         = content,
-                        modifier        = Modifier.weight(1f).fillMaxHeight(),
-                        onWikilinkClick = onWikilinkClick,
-                        resolveImage    = resolveImage,
+                        content          = content,
+                        modifier         = Modifier.weight(1f).fillMaxHeight(),
+                        onWikilinkClick  = onWikilinkClick,
+                        resolveImage     = resolveImage,
+                        onToggleCheckbox = onContentChange,
                     )
                 }
             }
