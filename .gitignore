@@ -23,3 +23,6 @@ captures/
 # Built APK artifacts (distributed via GitHub Releases)
 *.apk
 *.idsig
+
+# Signing secrets (keep private)
+keystore.properties
