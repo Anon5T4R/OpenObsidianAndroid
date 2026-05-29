@@ -31,7 +31,6 @@ import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.VaultRepository
 import com.openobsidian.android.ui.components.DocxViewer
 import com.openobsidian.android.ui.components.FileTreeContent
-import com.openobsidian.android.ui.components.GraphView
 import com.openobsidian.android.ui.components.MarkdownEditor
 import com.openobsidian.android.ui.components.MarkdownPreview
 import com.openobsidian.android.ui.components.PdfViewer
@@ -62,21 +61,6 @@ fun VaultScreen(
     // Auto-close drawer when file opens (phone only)
     LaunchedEffect(state.activeFile) {
         if (!isTablet && state.activeFile != null && drawerState.isOpen) drawerState.close()
-    }
-
-    // ── Graph overlay (full-screen, covers everything) ────────────────────
-    var showGraph by remember { mutableStateOf(false) }
-    if (showGraph) {
-        BackHandler { showGraph = false }
-        GraphView(
-            nodes         = state.tree?.allMarkdownFiles ?: emptyList(),
-            backlinks     = state.backlinks,
-            activeFileUri = state.activeFile?.uri?.toString(),
-            onNodeClick   = { file -> vm.openFile(file); showGraph = false },
-            onClose       = { showGraph = false },
-            modifier      = Modifier.fillMaxSize(),
-        )
-        return
     }
 
     // ── Search overlay (covers everything) ────────────────────────────────
@@ -122,7 +106,6 @@ fun VaultScreen(
             onMoveNode     = { node, target -> vm.moveNode(node, target) },
             onTogglePin    = { vm.togglePin(it) },
             onDailyNote    = { vm.openDailyNote() },
-            onOpenGraph    = { showGraph = true },
         )
     }
 
@@ -158,18 +141,6 @@ fun VaultScreen(
                     actions = {
                         if (state.activeFile?.isText == true) {
                             ViewModeToggle(current = state.viewMode, onSelect = { vm.setViewMode(it) })
-                            // Export as PDF
-                            IconButton(
-                                onClick = {
-                                    exportToPdf(
-                                        context = context,
-                                        content = state.activeContent,
-                                        title   = state.activeFile?.displayName ?: "note",
-                                    )
-                                }
-                            ) {
-                                Icon(Icons.Default.Print, contentDescription = "Export as PDF")
-                            }
                         }
                         if (state.tree != null) {
                             IconButton(onClick = { vm.navBack() },    enabled = state.canNavBack) {
@@ -182,13 +153,34 @@ fun VaultScreen(
                                 Icon(Icons.Default.Search, contentDescription = "Search")
                             }
                         }
-                        if (state.activeFile != null) {
-                            IconButton(onClick = { vm.closeFile() }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close note")
-                            }
-                        }
                         IconButton(onClick = onOpenSettings) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                        // Overflow menu for note-specific actions (Export PDF).
+                        if (state.activeFile?.isText == true) {
+                            var showNoteMenu by remember { mutableStateOf(false) }
+                            Box {
+                                IconButton(onClick = { showNoteMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+                                }
+                                DropdownMenu(
+                                    expanded         = showNoteMenu,
+                                    onDismissRequest = { showNoteMenu = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text        = { Text("Export as PDF") },
+                                        leadingIcon = { Icon(Icons.Default.Print, contentDescription = null) },
+                                        onClick     = {
+                                            showNoteMenu = false
+                                            exportToPdf(
+                                                context = context,
+                                                content = state.activeContent,
+                                                title   = state.activeFile?.displayName ?: "note",
+                                            )
+                                        },
+                                    )
+                                }
+                            }
                         }
                     },
                 )
