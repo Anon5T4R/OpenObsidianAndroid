@@ -1,5 +1,9 @@
 package com.openobsidian.android.ui.components
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Slash commands catalogue
@@ -41,6 +46,8 @@ private data class SlashCmd(
     val snippet: String,
     /** Characters to move cursor back from end of snippet (0 = stay at end). */
     val cursorBack: Int = 0,
+    /** When true, selecting this command launches the gallery picker instead of inserting [snippet]. */
+    val isImageImport: Boolean = false,
 )
 
 private val SLASH_COMMANDS = listOf(
@@ -57,7 +64,8 @@ private val SLASH_COMMANDS = listOf(
     SlashCmd(Icons.Default.FormatListNumbered,   "Numbered list",   "1. "),
     SlashCmd(Icons.Default.CheckBox,             "Checkbox",        "- [ ] "),
     SlashCmd(Icons.Default.Link,                 "Wikilink",        "[[link]]",            2),
-    SlashCmd(Icons.Default.Image,                "Image",           "![[image.png]]",      10),
+    SlashCmd(Icons.Default.Image,                "Image (embed)",   "![[image.png]]",      10),
+    SlashCmd(Icons.Default.AddPhotoAlternate,    "Image from gallery", "", isImageImport = true),
     SlashCmd(Icons.Default.FormatQuote,          "Quote",           "> "),
     SlashCmd(Icons.Default.HorizontalRule,       "Divider",         "---\n"),
 )
@@ -79,6 +87,7 @@ fun MarkdownEditor(
     content: String,
     onContentChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onImportImage: (suspend (Uri) -> String?)? = null,
 ) {
     val colors      = MaterialTheme.colorScheme
     val baseStyle   = MaterialTheme.typography.bodyMedium.copy(
@@ -105,6 +114,26 @@ fun MarkdownEditor(
     var slashStart by remember { mutableStateOf(-1) }
     var slashQuery by remember { mutableStateOf("") }
 
+    // ── Image import (gallery picker) ─────────────────────────────────────────
+    val scope = rememberCoroutineScope()
+    var pendingImageOffset by remember { mutableStateOf(-1) }
+    val imageLauncher = if (onImportImage != null) {
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            val off = pendingImageOffset
+            pendingImageOffset = -1
+            if (uri != null) {
+                scope.launch {
+                    val name = onImportImage(uri) ?: return@launch
+                    val at      = off.coerceIn(0, tfv.text.length)
+                    val snippet = "![[$name]]"
+                    val newText = tfv.text.substring(0, at) + snippet + tfv.text.substring(at)
+                    tfv = TextFieldValue(newText, selection = TextRange(at + snippet.length))
+                    onContentChange(newText)
+                }
+            }
+        }
+    } else null
+
     // ── Selection state ──────────────────────────────────────────────────────
     val hasSelection = !tfv.selection.collapsed && tfv.selection.length > 0
 
@@ -121,9 +150,23 @@ fun MarkdownEditor(
     }
 
     fun insertSnippet(cmd: SlashCmd) {
-        val text     = tfv.text
-        val cursor   = tfv.selection.start
-        val newText  = text.substring(0, slashStart) + cmd.snippet + text.substring(cursor)
+        val text   = tfv.text
+        val cursor = tfv.selection.start
+
+        if (cmd.isImageImport && imageLauncher != null) {
+            // Drop the "/query" trigger text, then launch the picker.
+            val newText = text.substring(0, slashStart) + text.substring(cursor)
+            tfv = TextFieldValue(newText, selection = TextRange(slashStart))
+            onContentChange(newText)
+            pendingImageOffset = slashStart
+            showSlash = false
+            imageLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+            return
+        }
+
+        val newText   = text.substring(0, slashStart) + cmd.snippet + text.substring(cursor)
         val newCursor = slashStart + cmd.snippet.length - cmd.cursorBack
         tfv = TextFieldValue(newText, selection = TextRange(newCursor))
         onContentChange(newText)

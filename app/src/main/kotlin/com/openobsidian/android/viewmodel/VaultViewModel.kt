@@ -71,8 +71,11 @@ class VaultViewModel(
 
     // ── File resolution ───────────────────────────────────────────────────
 
-    /** Find any file in the vault tree by exact name (case-insensitive). */
+    /** Find any file (note or image) in the vault by exact name (case-insensitive). */
     fun resolveFile(name: String): Uri? {
+        val tree = _state.value.tree ?: return null
+        // Images are indexed separately (not part of the node tree).
+        tree.images[name.lowercase()]?.let { return it }
         fun search(nodes: List<Node>): Uri? {
             for (node in nodes) {
                 when (node) {
@@ -82,7 +85,7 @@ class VaultViewModel(
             }
             return null
         }
-        return _state.value.tree?.let { search(it.root) }
+        return search(tree.root)
     }
 
     // ── Tree ──────────────────────────────────────────────────────────────
@@ -290,6 +293,40 @@ class VaultViewModel(
             openFile(newFile)
             loadTree()
         }
+    }
+
+    // ── Image import ──────────────────────────────────────────────────────
+
+    /**
+     * Copy a picked image into the vault's `attachments/` folder and return the
+     * final file name (for an `![[name]]` embed), or null on failure.
+     */
+    suspend fun importImage(sourceUri: Uri): String? {
+        val tree = _state.value.tree ?: return null
+        val targetDir = SafFs.findOrCreateDir(appContext, tree.rootUri, "attachments")
+            ?: tree.rootUri
+        val suggested = queryDisplayName(sourceUri)
+            ?: "image-${System.currentTimeMillis()}.${extForMime(sourceUri)}"
+        val name = SafFs.importImage(appContext, targetDir, sourceUri, suggested) ?: return null
+        loadTree() // refresh the image index so the embed resolves
+        return name
+    }
+
+    private fun queryDisplayName(uri: Uri): String? = runCatching {
+        appContext.contentResolver.query(
+            uri,
+            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null, null, null,
+        )?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    }.getOrNull()
+
+    private fun extForMime(uri: Uri): String = when (appContext.contentResolver.getType(uri)) {
+        "image/png"     -> "png"
+        "image/gif"     -> "gif"
+        "image/webp"    -> "webp"
+        "image/bmp"     -> "bmp"
+        "image/svg+xml" -> "svg"
+        else            -> "jpg"
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────

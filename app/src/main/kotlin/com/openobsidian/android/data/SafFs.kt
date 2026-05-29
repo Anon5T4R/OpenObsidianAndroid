@@ -85,17 +85,22 @@ object SafFs {
         val root = DocumentFile.fromTreeUri(context, rootUri)
             ?: return@withContext Tree.empty(rootUri)
         val rootName = root.name ?: "Vault"
-        val children = walkInto(context, rootUri)
-        Tree(name = rootName, rootUri = rootUri, root = children)
+        val images   = HashMap<String, Uri>()
+        val children = walkInto(context, rootUri, images)
+        Tree(name = rootName, rootUri = rootUri, root = children, images = images)
     }
 
-    private suspend fun walkInto(context: Context, dirUri: Uri): List<Node> {
+    private suspend fun walkInto(
+        context: Context,
+        dirUri: Uri,
+        images: MutableMap<String, Uri>,
+    ): List<Node> {
         val entries = listChildren(context, dirUri)
         val out = ArrayList<Node>(entries.size)
         for (e in entries) {
             if (e.name.startsWith(".")) continue
             if (e.isDirectory) {
-                val children = walkInto(context, e.uri)
+                val children = walkInto(context, e.uri, images)
                 // Show all non-hidden dirs (including empty ones the user just created)
                 out += Node.Dir(name = e.name, uri = e.uri, children = children)
             } else if (isSupportedFile(e.name)) {
@@ -105,6 +110,10 @@ object SafFs {
                     size = e.size,
                     mtime = e.lastModified,
                 )
+            } else if (isImageFile(e.name)) {
+                // Images aren't shown as note rows but are indexed so that
+                // ![[image.png]] embeds can resolve to a content:// URI.
+                images[e.name.lowercase()] = e.uri
             }
         }
         // Dirs first, then files; alphabetical within each group
@@ -117,6 +126,13 @@ object SafFs {
         return lower.endsWith(".md") || lower.endsWith(".markdown")
             || lower.endsWith(".pdf") || lower.endsWith(".docx")
             || lower.endsWith(".txt")
+    }
+
+    private val IMAGE_EXTS = listOf(".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg")
+
+    private fun isImageFile(name: String): Boolean {
+        val lower = name.lowercase()
+        return IMAGE_EXTS.any { lower.endsWith(it) }
     }
 
     // ── Read / write ──────────────────────────────────────────────────────
@@ -184,6 +200,70 @@ object SafFs {
             uri
         }
 
+    /** Find an immediate child directory by name, creating it if absent. */
+    suspend fun findOrCreateDir(
+        context: Context,
+        parentDir: Uri,
+        name: String,
+    ): Uri? = withContext(Dispatchers.IO) {
+        listChildren(context, parentDir)
+            .firstOrNull { it.isDirectory && it.name.equals(name, ignoreCase = true) }
+            ?.uri
+            ?: createDirectory(context, parentDir, name)
+    }
+
+    /**
+     * Copy an external image (from the gallery picker) into [targetDir].
+     * Returns the final file name written (deduplicated), or null on failure.
+     */
+    suspend fun importImage(
+        context: Context,
+        targetDir: Uri,
+        sourceUri: Uri,
+        suggestedName: String,
+    ): String? = withContext(Dispatchers.IO) {
+        val existing = listChildren(context, targetDir).map { it.name.lowercase() }.toHashSet()
+        val finalName = uniqueName(suggestedName, existing)
+        val mime = context.contentResolver.getType(sourceUri)
+            ?: mimeForName(finalName)
+        val destUri = DocumentsContract.createDocument(
+            context.contentResolver,
+            toDocumentUri(targetDir),
+            mime,
+            finalName,
+        ) ?: return@withContext null
+        runCatching {
+            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                context.contentResolver.openOutputStream(destUri)?.use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }.getOrElse {
+            runCatching { DocumentsContract.deleteDocument(context.contentResolver, destUri) }
+            return@withContext null
+        }
+        finalName
+    }
+
+    private fun uniqueName(name: String, taken: Set<String>): String {
+        if (name.lowercase() !in taken) return name
+        val dot  = name.lastIndexOf('.')
+        val base = if (dot > 0) name.substring(0, dot) else name
+        val ext  = if (dot > 0) name.substring(dot) else ""
+        var i = 1
+        while ("$base-$i$ext".lowercase() in taken) i++
+        return "$base-$i$ext"
+    }
+
+    private fun mimeForName(name: String): String = when {
+        name.endsWith(".png", true)  -> "image/png"
+        name.endsWith(".gif", true)  -> "image/gif"
+        name.endsWith(".webp", true) -> "image/webp"
+        name.endsWith(".bmp", true)  -> "image/bmp"
+        name.endsWith(".svg", true)  -> "image/svg+xml"
+        else                          -> "image/jpeg"
+    }
+
     suspend fun delete(context: Context, docUri: Uri): Boolean = withContext(Dispatchers.IO) {
         DocumentsContract.deleteDocument(context.contentResolver, docUri)
     }
@@ -232,6 +312,8 @@ data class Tree(
     val name: String,
     val rootUri: Uri,
     val root: List<Node>,
+    /** Lowercased image filename → content URI, for resolving ![[image.png]] embeds. */
+    val images: Map<String, Uri> = emptyMap(),
 ) {
     companion object {
         fun empty(rootUri: Uri) = Tree(name = "Vault", rootUri = rootUri, root = emptyList())

@@ -240,6 +240,7 @@ fun VaultScreen(
                             onOpenCompanionNote = { vm.openCompanionNote(state.activeFile!!) },
                             resolveImage        = { name -> vm.resolveFile(name) },
                             onConvertDocx       = { vm.convertDocxToMd(state.activeFile!!) },
+                            onImportImage       = { uri -> vm.importImage(uri) },
                         )
                     }
 
@@ -401,6 +402,7 @@ private fun NoteArea(
     onOpenCompanionNote: () -> Unit = {},
     resolveImage: (String) -> Uri? = { null },
     onConvertDocx: () -> Unit = {},
+    onImportImage: (suspend (Uri) -> String?)? = null,
 ) {
     if (file.isPdf) {
         PdfViewer(
@@ -433,7 +435,8 @@ private fun NoteArea(
     Box(Modifier.fillMaxSize()) {
         when (viewMode) {
             ViewMode.EDIT -> MarkdownEditor(
-                content, onContentChange, Modifier.fillMaxSize()
+                content, onContentChange, Modifier.fillMaxSize(),
+                onImportImage = onImportImage,
             )
             ViewMode.PREVIEW -> MarkdownPreview(
                 content          = content,
@@ -444,7 +447,10 @@ private fun NoteArea(
             )
             ViewMode.SPLIT -> {
                 Row(Modifier.fillMaxSize()) {
-                    MarkdownEditor(content, onContentChange, Modifier.weight(1f).fillMaxHeight())
+                    MarkdownEditor(
+                        content, onContentChange, Modifier.weight(1f).fillMaxHeight(),
+                        onImportImage = onImportImage,
+                    )
                     VerticalDivider()
                     MarkdownPreview(
                         content          = content,
