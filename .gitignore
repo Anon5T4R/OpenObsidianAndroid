@@ -26,3 +26,5 @@ captures/
 
 # Signing secrets (keep private)
 keystore.properties
+
+.claude/
