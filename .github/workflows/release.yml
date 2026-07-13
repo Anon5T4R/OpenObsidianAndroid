@@ -26,27 +26,26 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Reconstrói a keystore e o keystore.properties a partir dos Secrets.
-      # A assinatura precisa ser a MESMA chave já usada nas releases anteriores,
-      # senão o APK não instala por cima da versão publicada.
+      # Reconstrói a keystore e o keystore.properties a partir de 2 Secrets:
+      #   KEYSTORE_B64            = base64 do openobsidian-release.jks
+      #   KEYSTORE_PROPERTIES_B64 = base64 do seu keystore.properties (senhas já corretas)
+      # Assim as senhas não são redigitadas — vêm do arquivo que já funciona local.
+      # A linha storeFile é forçada para o nome do .jks recriado aqui (evita path
+      # absoluto de Windows que não existe no runner Linux).
+      # A chave precisa ser a MESMA das releases anteriores, senão o APK não
+      # instala por cima da versão publicada.
       - name: Restaurar keystore de assinatura
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PROPERTIES_B64: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
         run: |
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::error::Faltam os Secrets da keystore (KEYSTORE_B64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD). Cadastre em Settings → Secrets and variables → Actions e rode de novo."
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PROPERTIES_B64" ]; then
+            echo "::error::Faltam os Secrets KEYSTORE_B64 e/ou KEYSTORE_PROPERTIES_B64. Cadastre em Settings → Secrets and variables → Actions e rode de novo."
             exit 1
           fi
           echo "$KEYSTORE_B64" | base64 -d > openobsidian-release.jks
-          {
-            echo "storeFile=openobsidian-release.jks"
-            echo "storePassword=$KEYSTORE_PASSWORD"
-            echo "keyAlias=$KEY_ALIAS"
-            echo "keyPassword=$KEY_PASSWORD"
-          } > keystore.properties
+          echo "$KEYSTORE_PROPERTIES_B64" | base64 -d | grep -v '^storeFile=' > keystore.properties
+          echo "storeFile=openobsidian-release.jks" >> keystore.properties
 
       - name: Build release APK (assinado)
         run: |
