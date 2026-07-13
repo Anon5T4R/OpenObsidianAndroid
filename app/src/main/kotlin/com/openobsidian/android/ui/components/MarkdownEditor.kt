@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -83,6 +84,8 @@ private val SLASH_COMMANDS = listOf(
  *   • Syntax highlighting (headings, bold, italic, strikethrough, code, wikilinks)
  *   • Selection formatting toolbar (Bold / Italic / Strike / Code / Wikilink / Quote)
  *   • Slash commands: type `/` at line start → picker appears at bottom
+ *   • Find & replace bar ([findBarVisible]) e salto de cursor ([cursorRequest],
+ *     usado pelo sumário para pular até um heading)
  */
 @Composable
 fun MarkdownEditor(
@@ -90,6 +93,10 @@ fun MarkdownEditor(
     onContentChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     onImportImage: (suspend (Uri) -> String?)? = null,
+    cursorRequest: Int? = null,
+    onCursorRequestHandled: () -> Unit = {},
+    findBarVisible: Boolean = false,
+    onFindBarClose: () -> Unit = {},
 ) {
     val colors      = MaterialTheme.colorScheme
     val baseStyle   = MaterialTheme.typography.bodyMedium.copy(
@@ -109,6 +116,26 @@ fun MarkdownEditor(
         if (tfv.text != content) {
             tfv = TextFieldValue(content)
         }
+    }
+
+    // ── Text layout (para rolar até um offset) ───────────────────────────────
+    var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    suspend fun scrollToOffset(offset: Int) {
+        val layout  = textLayout ?: return
+        val clamped = offset.coerceIn(0, layout.layoutInput.text.length)
+        val line    = layout.getLineForOffset(clamped)
+        val y       = (layout.getLineTop(line).toInt() - 48).coerceAtLeast(0)
+        scrollState.animateScrollTo(y)
+    }
+
+    // Salto de cursor pedido de fora (sumário → heading)
+    LaunchedEffect(cursorRequest) {
+        val off = cursorRequest ?: return@LaunchedEffect
+        val clamped = off.coerceIn(0, tfv.text.length)
+        tfv = tfv.copy(selection = TextRange(clamped))
+        scrollToOffset(clamped)
+        onCursorRequestHandled()
     }
 
     // ── Slash command state ──────────────────────────────────────────────────
@@ -135,6 +162,53 @@ fun MarkdownEditor(
             }
         }
     } else null
+
+    // ── Find & replace state ─────────────────────────────────────────────────
+    var findQuery    by remember { mutableStateOf("") }
+    var replaceValue by remember { mutableStateOf("") }
+    var showReplace  by remember { mutableStateOf(false) }
+    var currentMatch by remember { mutableStateOf(0) }
+
+    val matches = remember(tfv.text, findQuery) {
+        if (findQuery.isEmpty()) emptyList()
+        else {
+            val out = mutableListOf<Int>()
+            var i = tfv.text.indexOf(findQuery, 0, ignoreCase = true)
+            while (i >= 0) {
+                out += i
+                i = tfv.text.indexOf(findQuery, i + 1, ignoreCase = true)
+            }
+            out
+        }
+    }
+    LaunchedEffect(matches.size) {
+        if (currentMatch >= matches.size) currentMatch = 0
+    }
+
+    fun gotoMatch(index: Int) {
+        if (matches.isEmpty()) return
+        val i     = ((index % matches.size) + matches.size) % matches.size
+        val start = matches[i]
+        currentMatch = i
+        tfv = tfv.copy(selection = TextRange(start, start + findQuery.length))
+        scope.launch { scrollToOffset(start) }
+    }
+
+    fun replaceCurrent() {
+        if (matches.isEmpty()) return
+        val start   = matches[currentMatch.coerceIn(0, matches.lastIndex)]
+        val newText = tfv.text.substring(0, start) + replaceValue +
+                      tfv.text.substring(start + findQuery.length)
+        tfv = TextFieldValue(newText, selection = TextRange(start + replaceValue.length))
+        onContentChange(newText)
+    }
+
+    fun replaceAll() {
+        if (findQuery.isEmpty() || matches.isEmpty()) return
+        val newText = tfv.text.replace(findQuery, replaceValue, ignoreCase = true)
+        tfv = TextFieldValue(newText, selection = TextRange(0))
+        onContentChange(newText)
+    }
 
     // ── Selection state ──────────────────────────────────────────────────────
     val hasSelection = !tfv.selection.collapsed && tfv.selection.length > 0
@@ -212,6 +286,25 @@ fun MarkdownEditor(
     // ── Layout ────────────────────────────────────────────────────────────────
     Column(modifier = modifier) {
 
+        // Find & replace bar (top)
+        AnimatedVisibility(visible = findBarVisible) {
+            FindReplaceBar(
+                query           = findQuery,
+                onQueryChange   = { findQuery = it; currentMatch = 0 },
+                matchCount      = matches.size,
+                currentMatch    = if (matches.isEmpty()) 0 else currentMatch + 1,
+                onPrev          = { gotoMatch(currentMatch - 1) },
+                onNext          = { gotoMatch(currentMatch + 1) },
+                showReplace     = showReplace,
+                onToggleReplace = { showReplace = !showReplace },
+                replaceValue    = replaceValue,
+                onReplaceChange = { replaceValue = it },
+                onReplaceOne    = { replaceCurrent() },
+                onReplaceAll    = { replaceAll() },
+                onClose         = { findQuery = ""; showReplace = false; onFindBarClose() },
+            )
+        }
+
         // Selection toolbar (top) — shown while text is selected.
         AnimatedVisibility(visible = hasSelection && !showSlash) {
             SelectionToolbar(
@@ -237,6 +330,7 @@ fun MarkdownEditor(
                 textStyle            = baseStyle,
                 cursorBrush          = SolidColor(colors.primary),
                 visualTransformation = transform,
+                onTextLayout         = { textLayout = it },
                 decorationBox        = { innerTextField ->
                     if (tfv.text.isEmpty()) {
                         Text(
@@ -256,6 +350,88 @@ fun MarkdownEditor(
                 onSelect  = { cmd -> insertSnippet(cmd) },
                 onDismiss = { showSlash = false },
             )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Find & replace bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun FindReplaceBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    matchCount: Int,
+    currentMatch: Int,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    showReplace: Boolean,
+    onToggleReplace: () -> Unit,
+    replaceValue: String,
+    onReplaceChange: (String) -> Unit,
+    onReplaceOne: () -> Unit,
+    onReplaceAll: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Surface(
+        color          = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 2.dp,
+        modifier       = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value         = query,
+                    onValueChange = onQueryChange,
+                    placeholder   = { Text("Find in note…") },
+                    singleLine    = true,
+                    textStyle     = MaterialTheme.typography.bodyMedium,
+                    modifier      = Modifier.weight(1f),
+                )
+                Text(
+                    text  = if (query.isEmpty()) "" else "$currentMatch/$matchCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 6.dp),
+                )
+                IconButton(onClick = onPrev, enabled = matchCount > 0, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Previous match", modifier = Modifier.size(20.dp))
+                }
+                IconButton(onClick = onNext, enabled = matchCount > 0, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next match", modifier = Modifier.size(20.dp))
+                }
+                IconButton(onClick = onToggleReplace, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Default.FindReplace,
+                        contentDescription = "Replace",
+                        modifier = Modifier.size(20.dp),
+                        tint = if (showReplace) MaterialTheme.colorScheme.primary
+                               else LocalContentColor.current,
+                    )
+                }
+                IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Close find bar", modifier = Modifier.size(20.dp))
+                }
+            }
+            AnimatedVisibility(visible = showReplace) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier          = Modifier.padding(top = 4.dp),
+                ) {
+                    OutlinedTextField(
+                        value         = replaceValue,
+                        onValueChange = onReplaceChange,
+                        placeholder   = { Text("Replace with…") },
+                        singleLine    = true,
+                        textStyle     = MaterialTheme.typography.bodyMedium,
+                        modifier      = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    TextButton(onClick = onReplaceOne, enabled = matchCount > 0) { Text("Replace") }
+                    TextButton(onClick = onReplaceAll, enabled = matchCount > 0) { Text("All") }
+                }
+            }
         }
     }
 }

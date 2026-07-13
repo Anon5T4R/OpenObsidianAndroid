@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,10 @@ import com.openobsidian.android.ui.components.FileTreeContent
 import com.openobsidian.android.ui.components.MarkdownEditor
 import com.openobsidian.android.ui.components.MarkdownPreview
 import com.openobsidian.android.ui.components.PdfViewer
+import com.openobsidian.android.ui.components.PreviewScrollConnection
+import com.openobsidian.android.ui.components.TocSheetContent
+import com.openobsidian.android.ui.components.parseHeadings
+import com.openobsidian.android.ui.components.plainHeadingText
 import com.openobsidian.android.viewmodel.ViewMode
 import com.openobsidian.android.viewmodel.VaultViewModel
 import kotlinx.coroutines.launch
@@ -57,6 +62,10 @@ fun VaultScreen(
     )
     val state       by vm.state.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    // Estado por nota: sumário (TOC) e barra de buscar/substituir
+    var tocOpen     by remember(state.activeFile?.uri) { mutableStateOf(false) }
+    var findBarOpen by remember(state.activeFile?.uri) { mutableStateOf(false) }
 
     // Auto-close drawer when file opens (phone only)
     LaunchedEffect(state.activeFile) {
@@ -106,6 +115,8 @@ fun VaultScreen(
             onMoveNode     = { node, target -> vm.moveNode(node, target) },
             onTogglePin    = { vm.togglePin(it) },
             onDailyNote    = { vm.openDailyNote() },
+            templates      = state.tree?.templates ?: emptyList(),
+            onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
         )
     }
 
@@ -167,6 +178,24 @@ fun VaultScreen(
                                     expanded         = showNoteMenu,
                                     onDismissRequest = { showNoteMenu = false },
                                 ) {
+                                    DropdownMenuItem(
+                                        text        = { Text("Outline") },
+                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.FormatListBulleted, contentDescription = null) },
+                                        onClick     = {
+                                            showNoteMenu = false
+                                            tocOpen = true
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text        = { Text("Find in note") },
+                                        leadingIcon = { Icon(Icons.Default.FindInPage, contentDescription = null) },
+                                        onClick     = {
+                                            showNoteMenu = false
+                                            // A barra vive no editor — garante um modo com editor visível.
+                                            if (state.viewMode == ViewMode.PREVIEW) vm.setViewMode(ViewMode.EDIT)
+                                            findBarOpen = true
+                                        },
+                                    )
                                     DropdownMenuItem(
                                         text        = { Text("Export as PDF") },
                                         leadingIcon = { Icon(Icons.Default.Print, contentDescription = null) },
@@ -237,6 +266,10 @@ fun VaultScreen(
                             resolveImage        = { name -> vm.resolveFile(name) },
                             onConvertDocx       = { vm.convertDocxToMd(state.activeFile!!) },
                             onImportImage       = { uri -> vm.importImage(uri) },
+                            tocOpen             = tocOpen,
+                            onTocDismiss        = { tocOpen = false },
+                            findBarOpen         = findBarOpen,
+                            onFindBarClose      = { findBarOpen = false },
                         )
                     }
 
@@ -399,6 +432,10 @@ private fun NoteArea(
     resolveImage: (String) -> Uri? = { null },
     onConvertDocx: () -> Unit = {},
     onImportImage: (suspend (Uri) -> String?)? = null,
+    tocOpen: Boolean = false,
+    onTocDismiss: () -> Unit = {},
+    findBarOpen: Boolean = false,
+    onFindBarClose: () -> Unit = {},
 ) {
     if (file.isPdf) {
         PdfViewer(
@@ -427,12 +464,20 @@ private fun NoteArea(
     var backlinkSheetOpen  by remember { mutableStateOf(false) }
     val showBacklinksButton = backlinks.isNotEmpty() && viewMode != ViewMode.EDIT
 
+    // Sumário (TOC): ponte de scroll com o preview + salto de cursor no editor
+    val previewConn = remember { PreviewScrollConnection() }
+    var editorCursorRequest by remember { mutableStateOf<Int?>(null) }
+
     // Content fills the full area — no reserved space at the bottom for backlinks
     Box(Modifier.fillMaxSize()) {
         when (viewMode) {
             ViewMode.EDIT -> MarkdownEditor(
                 content, onContentChange, Modifier.fillMaxSize(),
-                onImportImage = onImportImage,
+                onImportImage          = onImportImage,
+                cursorRequest          = editorCursorRequest,
+                onCursorRequestHandled = { editorCursorRequest = null },
+                findBarVisible         = findBarOpen,
+                onFindBarClose         = onFindBarClose,
             )
             ViewMode.PREVIEW -> MarkdownPreview(
                 content          = content,
@@ -440,12 +485,17 @@ private fun NoteArea(
                 onWikilinkClick  = onWikilinkClick,
                 resolveImage     = resolveImage,
                 onToggleCheckbox = onContentChange,
+                scrollConnection = previewConn,
             )
             ViewMode.SPLIT -> {
                 Row(Modifier.fillMaxSize()) {
                     MarkdownEditor(
                         content, onContentChange, Modifier.weight(1f).fillMaxHeight(),
-                        onImportImage = onImportImage,
+                        onImportImage          = onImportImage,
+                        cursorRequest          = editorCursorRequest,
+                        onCursorRequestHandled = { editorCursorRequest = null },
+                        findBarVisible         = findBarOpen,
+                        onFindBarClose         = onFindBarClose,
                     )
                     VerticalDivider()
                     MarkdownPreview(
@@ -454,6 +504,7 @@ private fun NoteArea(
                         onWikilinkClick  = onWikilinkClick,
                         resolveImage     = resolveImage,
                         onToggleCheckbox = onContentChange,
+                        scrollConnection = previewConn,
                     )
                 }
             }
@@ -484,6 +535,24 @@ private fun NoteArea(
                     backlinkSheetOpen = false
                 },
             )
+        }
+    }
+
+    // Sumário (TOC) — tocar num heading rola o preview ou move o cursor
+    if (tocOpen) {
+        val headings = remember(content) { parseHeadings(content) }
+        ModalBottomSheet(onDismissRequest = onTocDismiss) {
+            TocSheetContent(headings) { index, h ->
+                onTocDismiss()
+                if (viewMode == ViewMode.EDIT) {
+                    editorCursorRequest = h.offset
+                } else {
+                    val plain = plainHeadingText(h.text)
+                    val occurrence = headings.take(index)
+                        .count { plainHeadingText(it.text) == plain }
+                    previewConn.scrollToHeading(plain, occurrence)
+                }
+            }
         }
     }
 }

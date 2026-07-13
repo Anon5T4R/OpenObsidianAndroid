@@ -224,12 +224,43 @@ class VaultViewModel(
             val newUri = runCatching {
                 SafFs.createMarkdownFile(appContext, tree.rootUri, today)
             }.getOrNull() ?: return@launch
-            val header = "# $today\n\n"
+            // Usa templates/daily.md quando existir; senão só o cabeçalho.
+            val template = tree.templates.find { it.displayName.equals("daily", ignoreCase = true) }
+            val header = template
+                ?.let { t -> runCatching { SafFs.readText(appContext, t.uri) }.getOrNull() }
+                ?.let { raw -> applyTemplatePlaceholders(raw, today) }
+                ?: "# $today\n\n"
             runCatching { SafFs.writeText(appContext, newUri, header) }
             val newFile = Node.File(
                 name  = "$today.md",
                 uri   = newUri,
                 size  = header.length.toLong(),
+                mtime = System.currentTimeMillis(),
+            )
+            openFile(newFile)
+            loadTree()
+        }
+    }
+
+    // ── Templates ─────────────────────────────────────────────────────────
+
+    /**
+     * Cria uma nota na raiz do vault a partir de um template da pasta
+     * `templates/`, aplicando os placeholders {{title}}, {{date}} e {{time}}.
+     */
+    fun createFromTemplate(template: Node.File, name: String) {
+        val tree = _state.value.tree ?: return
+        viewModelScope.launch {
+            val raw     = runCatching { SafFs.readText(appContext, template.uri) }.getOrDefault("")
+            val content = applyTemplatePlaceholders(raw, name)
+            val newUri  = runCatching {
+                SafFs.createMarkdownFile(appContext, tree.rootUri, name)
+            }.getOrNull() ?: return@launch
+            runCatching { SafFs.writeText(appContext, newUri, content) }
+            val newFile = Node.File(
+                name  = "$name.md",
+                uri   = newUri,
+                size  = content.length.toLong(),
                 mtime = System.currentTimeMillis(),
             )
             openFile(newFile)
@@ -545,6 +576,19 @@ class VaultViewModel(
 // ─────────────────────────────────────────────────────────────────────────────
 
 private val WIKILINK_REGEX = Regex("\\[\\[([^\\]|\n]+?)(?:\\|[^\\]\n]+?)?]]")
+
+/** Placeholders de template: {{title}}, {{date}} (ISO) e {{time}} (HH:mm). */
+private fun applyTemplatePlaceholders(raw: String, title: String): String {
+    val now = java.time.LocalDateTime.now()
+    return raw
+        .replace("{{title}}", title, ignoreCase = true)
+        .replace("{{date}}", now.toLocalDate().toString(), ignoreCase = true)
+        .replace(
+            "{{time}}",
+            now.toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
+            ignoreCase = true,
+        )
+}
 
 private fun computeBacklinks(
     files: List<Node.File>,

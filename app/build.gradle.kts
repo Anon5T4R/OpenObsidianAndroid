@@ -23,8 +23,8 @@ android {
         applicationId = "com.openobsidian.android"
         minSdk = 28
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 5
+        versionName = "1.3.0"
 
         vectorDrawables { useSupportLibrary = true }
     }
@@ -113,6 +113,9 @@ dependencies {
     implementation("io.noties.markwon:ext-tasklist:4.6.2")
     implementation("io.noties.markwon:html:4.6.2")
     implementation("io.noties.markwon:image:4.6.2")
+    // LaTeX ($$…$$ e $…$) via JLatexMath; inline-parser é pré-requisito dos inlines
+    implementation("io.noties.markwon:ext-latex:4.6.2")
+    implementation("io.noties.markwon:inline-parser:4.6.2")
 
     // ── Debug / preview ──────────────────────────────────────────────────
     debugImplementation("androidx.compose.ui:ui-tooling")

@@ -138,6 +138,8 @@ private sealed class PendingDialog {
     data class Rename(val node: Node)           : PendingDialog()
     data class ConfirmDelete(val node: Node)    : PendingDialog()
     data class Move(val node: Node)             : PendingDialog()
+    object PickTemplate                          : PendingDialog()
+    data class CreateFromTemplate(val template: Node.File) : PendingDialog()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,6 +163,8 @@ fun FileTreeContent(
     onMoveNode: (node: Node, targetDir: Uri) -> Unit = { _, _ -> },
     onTogglePin: (Node.File) -> Unit = {},
     onDailyNote: () -> Unit = {},
+    templates: List<Node.File> = emptyList(),
+    onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable {
@@ -233,6 +237,16 @@ fun FileTreeContent(
                             tree?.let { dialog = PendingDialog.CreateFolder(it.rootUri) }
                         },
                     )
+                    if (templates.isNotEmpty()) {
+                        DropdownMenuItem(
+                            text         = { Text("New from template") },
+                            leadingIcon  = { Icon(Icons.Default.ContentCopy, null) },
+                            onClick      = {
+                                showAddMenu = false
+                                dialog = PendingDialog.PickTemplate
+                            },
+                        )
+                    }
                 }
             }
 
@@ -346,8 +360,65 @@ fun FileTreeContent(
             onConfirm = { target -> dialog = null; onMoveNode(d.node, target) },
             onDismiss = { dialog = null },
         )
+        is PendingDialog.PickTemplate -> TemplatePickerDialog(
+            templates = templates,
+            onPick    = { t -> dialog = PendingDialog.CreateFromTemplate(t) },
+            onDismiss = { dialog = null },
+        )
+        is PendingDialog.CreateFromTemplate -> InputDialog(
+            title     = "New note from \"${d.template.displayName}\"",
+            hint      = "Note name",
+            onConfirm = { name -> dialog = null; onCreateFromTemplate(d.template, name) },
+            onDismiss = { dialog = null },
+        )
         null -> {}
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Template picker
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TemplatePickerDialog(
+    templates: List<Node.File>,
+    onPick: (Node.File) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New note from template") },
+        text  = {
+            LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                items(templates, key = { it.uri.toString() }) { t ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onPick(t) }
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint     = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            t.displayName,
+                            style    = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

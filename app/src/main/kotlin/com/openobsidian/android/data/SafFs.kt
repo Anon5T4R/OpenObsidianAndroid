@@ -359,4 +359,15 @@ data class Tree(
         walk(root)
         out
     }
+
+    /** Notas .md da pasta `templates/` na raiz do vault (vazio se não existir). */
+    val templates: List<Node.File> by lazy {
+        root.filterIsInstance<Node.Dir>()
+            .find { it.name.equals("templates", ignoreCase = true) }
+            ?.children
+            ?.filterIsInstance<Node.File>()
+            ?.filter { it.isText }
+            ?.sortedBy { it.displayName.lowercase() }
+            ?: emptyList()
+    }
 }

@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **1.2.1** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **1.3.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -21,6 +21,12 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
   código, highlight, wikilink, citação).
 - **Modos de visualização**: Editar · Preview · Split (lado a lado).
 - **Autosave** (~1,5 s após parar de digitar) + `Ctrl+S` em teclado físico.
+- **Buscar e substituir na nota** (menu ⋮ → "Find in note"): contador de
+  ocorrências, anterior/próximo, substituir uma ou todas.
+- **Templates**: arquivos `.md` na pasta `templates/` do vault viram modelos —
+  crie notas pelo botão **+** da sidebar ("New from template") com os
+  placeholders `{{title}}`, `{{date}}` e `{{time}}`. A **nota do dia** usa
+  `templates/daily.md` automaticamente, se existir.
 
 ### Preview (renderização)
 - Renderização via **Markwon**: tabelas, listas de tarefas, tachado, código.
@@ -29,6 +35,12 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - **Wikilinks** `[[Nota]]` e `[[Nota|texto]]` clicáveis.
 - **Imagens** `![[imagem.png]]` e `![alt](uri)` renderizadas.
 - **Highlight** `==texto==`.
+- **Matemática LaTeX** via JLatexMath: `$$bloco$$`, `$inline$`, `\(inline\)`
+  e `\[bloco\]`.
+- **Callouts do Obsidian** (`> [!info]`, `> [!warning] Título`, ~25 tipos) —
+  renderizados como citação com emoji + título em negrito.
+- **Sumário (outline)** da nota (menu ⋮ → "Outline"): lista os títulos e rola
+  o preview (ou move o cursor no modo Editar) até o título tocado.
 
 ### Organização
 - **Árvore de arquivos** na barra lateral, com pastas, filtro e ordenação
@@ -181,6 +193,8 @@ Android (permita "instalar de fontes desconhecidas" se solicitado).
 | Divisor | `---` |
 | Wikilink | `[[Nota]]` · `[[Nota\|texto]]` |
 | Imagem (vault) | `![[imagem.png]]` |
+| Matemática | `$$bloco$$` · `$inline$` · `\(inline\)` · `\[bloco\]` |
+| Callout | `> [!info]` · `> [!warning] Título` |
 
 ---
 
