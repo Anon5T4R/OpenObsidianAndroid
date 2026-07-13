@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -165,6 +166,8 @@ fun FileTreeContent(
     onDailyNote: () -> Unit = {},
     templates: List<Node.File> = emptyList(),
     onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
+    /** Quando não-nulo, mostra um botão de recolher a barra (tela larga/paisagem). */
+    onCollapseSidebar: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable {
@@ -198,6 +201,11 @@ fun FileTreeContent(
                 maxLines   = 1,
                 overflow   = TextOverflow.Ellipsis,
             )
+
+            // ── Switch vault (à esquerda do calendário) ───────────────────
+            IconButton(onClick = onSwitchVault, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.FolderOpen, contentDescription = "Switch vault", modifier = Modifier.size(20.dp))
+            }
 
             // ── Daily note ────────────────────────────────────────────────
             IconButton(onClick = onDailyNote, modifier = Modifier.size(36.dp)) {
@@ -250,9 +258,11 @@ fun FileTreeContent(
                 }
             }
 
-            // ── Switch vault ──────────────────────────────────────────────
-            IconButton(onClick = onSwitchVault, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.FolderOpen, contentDescription = "Switch vault", modifier = Modifier.size(20.dp))
+            // ── Recolher a barra (só existe na barra fixa de tela larga) ──
+            if (onCollapseSidebar != null) {
+                IconButton(onClick = onCollapseSidebar, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.MenuOpen, contentDescription = "Collapse sidebar", modifier = Modifier.size(20.dp))
+                }
             }
         }
 

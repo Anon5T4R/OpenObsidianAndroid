@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
@@ -66,6 +67,10 @@ fun VaultScreen(
     // Estado por nota: sumário (TOC) e barra de buscar/substituir
     var tocOpen     by remember(state.activeFile?.uri) { mutableStateOf(false) }
     var findBarOpen by remember(state.activeFile?.uri) { mutableStateOf(false) }
+
+    // Barra lateral fixa (tela larga/paisagem): recolher/expandir.
+    // No retrato (modal) isso não se aplica — lá o gesto de puxar cuida disso.
+    var sidebarCollapsed by rememberSaveable { mutableStateOf(false) }
 
     // Auto-close drawer when file opens (phone only)
     LaunchedEffect(state.activeFile) {
@@ -117,6 +122,8 @@ fun VaultScreen(
             onDailyNote    = { vm.openDailyNote() },
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
+            // Botão de recolher só na barra fixa (tela larga); no modal é null.
+            onCollapseSidebar = if (isTablet) ({ sidebarCollapsed = true }) else null,
         )
     }
 
@@ -142,11 +149,17 @@ fun VaultScreen(
                         }
                     },
                     navigationIcon = {
-                        // Hide hamburger on tablet (drawer is always visible)
-                        if (!isTablet) {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                        when {
+                            // Retrato/telas estreitas: hambúrguer abre o drawer modal.
+                            !isTablet -> IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(Icons.Default.Menu, contentDescription = "Open menu")
                             }
+                            // Tela larga com a barra recolhida: hambúrguer re-expande.
+                            sidebarCollapsed -> IconButton(onClick = { sidebarCollapsed = false }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Expand sidebar")
+                            }
+                            // Tela larga com a barra visível: sem ícone aqui (a própria
+                            // barra tem o botão de recolher no cabeçalho).
                         }
                     },
                     actions = {
@@ -285,18 +298,21 @@ fun VaultScreen(
     }
 
     // ── Choose drawer type based on screen width ──────────────────────────
+    // Tela larga (tablet/paisagem): barra lateral fixa, mas recolhível.
     if (isTablet) {
-        PermanentNavigationDrawer(
-            drawerContent = {
-                PermanentDrawerSheet(
-                    modifier             = Modifier.width(280.dp),
-                    drawerContainerColor = MaterialTheme.colorScheme.surface,
+        Row(Modifier.fillMaxSize()) {
+            if (!sidebarCollapsed) {
+                Surface(
+                    modifier = Modifier.width(280.dp).fillMaxHeight(),
+                    color    = MaterialTheme.colorScheme.surface,
                 ) {
                     drawerContent()
                 }
-            },
-        ) {
-            scaffoldContent()
+                VerticalDivider()
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                scaffoldContent()
+            }
         }
     } else {
         ModalNavigationDrawer(

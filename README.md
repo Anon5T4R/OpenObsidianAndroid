@@ -64,7 +64,9 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - **Botão Voltar do Android** navega dentro do app (fecha gaveta → volta no
   histórico → fecha a nota) em vez de sair direto.
 - **Temas** claro / escuro / sistema; tamanho da fonte do preview ajustável.
-- **Layout adaptativo**: em tablets a barra lateral fica fixa.
+- **Layout adaptativo**: em telas largas (tablet/paisagem) a barra lateral fica
+  fixa e pode ser **recolhida/expandida** (botão no cabeçalho da barra e ícone de
+  menu na topbar quando recolhida); no retrato, o gesto de puxar continua.
 - O teclado não cobre mais o fim da nota ao digitar.
 
 ---
