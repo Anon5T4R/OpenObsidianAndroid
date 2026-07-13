@@ -51,19 +51,15 @@ jobs:
       # abrem. Só imprime OK/FALHOU — nunca as senhas. Remover quando resolvido.
       - name: Diagnóstico da keystore
         run: |
-          SP=$(grep '^storePassword=' keystore.properties | cut -d'=' -f2-)
-          KP=$(grep '^keyPassword=' keystore.properties | cut -d'=' -f2-)
           AL=$(grep '^keyAlias=' keystore.properties | cut -d'=' -f2-)
+          echo "== integridade do .jks decodificado do secret =="
+          echo "  bytes: $(wc -c < openobsidian-release.jks)   (local esperado: 2740)"
+          echo "  sha256: $(sha256sum openobsidian-release.jks | cut -d' ' -f1)"
+          echo "  (local esperado: 390b106f83a28196c690b7ea1d237ac21ea9459b9b5acfc98f66d975727f6c48)"
           echo "alias configurado: $AL"
-          echo "== tipo e entradas da keystore (com store password) =="
-          keytool -list -v -keystore openobsidian-release.jks -storepass "$SP" 2>/dev/null \
-            | grep -iE "Keystore type|Alias name|Entry type|Certificate fingerprints" || echo "  (store password não abriu a keystore)"
-          echo "== store password =="
-          keytool -list -keystore openobsidian-release.jks -storepass "$SP" >/dev/null 2>&1 \
-            && echo "  STORE PASSWORD OK" || echo "  STORE PASSWORD FALHOU"
-          echo "== key password (valida via -certreq) =="
-          keytool -certreq -alias "$AL" -keystore openobsidian-release.jks -storepass "$SP" -keypass "$KP" -dname "CN=diag" >/dev/null 2>&1 \
-            && echo "  KEY PASSWORD OK" || echo "  KEY PASSWORD FALHOU"
+          echo "== mensagem real do keytool -list (store password do arquivo) =="
+          SP=$(grep '^storePassword=' keystore.properties | cut -d'=' -f2-)
+          keytool -list -keystore openobsidian-release.jks -storepass "$SP" 2>&1 | head -5 || true
 
       - name: Build release APK (assinado)
         run: |
