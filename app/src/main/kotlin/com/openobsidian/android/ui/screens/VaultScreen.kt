@@ -306,7 +306,19 @@ fun VaultScreen(
                     modifier = Modifier.width(280.dp).fillMaxHeight(),
                     color    = MaterialTheme.colorScheme.surface,
                 ) {
-                    drawerContent()
+                    // O Surface preenche até o topo (fundo contínuo atrás da
+                    // status bar), mas o conteúdo é empurrado para baixo das
+                    // barras de sistema e do notch (paisagem) — senão o
+                    // relógio/wifi/bateria ficam por cima do cabeçalho.
+                    Box(
+                        Modifier.windowInsetsPadding(
+                            WindowInsets.systemBars
+                                .union(WindowInsets.displayCutout)
+                                .only(WindowInsetsSides.Start + WindowInsetsSides.Top + WindowInsetsSides.Bottom)
+                        )
+                    ) {
+                        drawerContent()
+                    }
                 }
                 VerticalDivider()
             }

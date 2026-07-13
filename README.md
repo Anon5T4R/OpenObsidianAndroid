@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **1.3.1** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **1.3.2** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
