@@ -15,16 +15,16 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # Reconstrói a keystore e o keystore.properties a partir de 2 Secrets:
       #   KEYSTORE_B64            = base64 do openobsidian-release.jks
@@ -59,7 +59,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "out/OpenObsidian-${NAME}.apk"
 
       - name: Upload do artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-release
           path: out/*.apk
@@ -68,7 +68,7 @@ jobs:
       # Só publica Release quando o gatilho é uma tag.
       - name: Publicar GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: out/*.apk
           generate_release_notes: true
