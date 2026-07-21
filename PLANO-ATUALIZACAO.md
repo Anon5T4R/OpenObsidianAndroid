@@ -28,7 +28,7 @@
 | Calendário sobre as notas diárias | ❌ | Fase 3 |
 | Import de `.apkg` do Anki | ❌ | Fase 3 — sql.js não serve aqui; avaliar SQLite nativo |
 | Estatísticas de revisão (retenção, previsão) | ❌ | Fase 3 |
-| i18n (PT-BR / EN / ES) | ❌ | Fase 3 — strings em inglês no código |
+| **i18n (PT-BR / EN / ES)** | ✅ 2.1.0 | ~95 strings em strings.xml + values-pt-rBR + values-es |
 | **Mermaid** | ✅ 2.0.0 | Toque abre em tela cheia com zoom; `mermaid.min.js` nos assets, WebView sem rede |
 | EPUB, backup do vault, cache persistente do índice | ❌ | Fase 3 |
 | Grafo (D3) | ❌ | **Não portar** — tentado e removido de propósito (commit 4b90284) |

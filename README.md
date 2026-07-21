@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **2.0.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **2.1.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,9 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Idiomas
+- Interface em **português, inglês e espanhol**, seguindo o idioma do sistema.
 
 ### Diagramas
 - **Mermaid**: um bloco ` ```mermaid ` vira um link no preview; tocar abre o
