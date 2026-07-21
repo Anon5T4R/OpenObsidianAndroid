@@ -147,4 +147,8 @@
     <string name="diagnostics_broken">Links mortos (%1$d)</string>
     <string name="diagnostics_orphans">Notas órfãs (%1$d)</string>
     <string name="diagnostics_duplicates">Nomes duplicados (%1$d)</string>
-    <string name="diagnostics_notes_count">%1$d notas com este nome</string></resources>
+    <string name="diagnostics_notes_count">%1$d notas com este nome</string>    <string name="menu_backup">Backup do vault (.zip)</string>
+    <string name="backup_running">Fazendo backup…</string>
+    <string name="backup_done">%1$d arquivos no backup</string>
+    <string name="backup_done_skipped">%1$d arquivos no backup · %2$d não puderam ser lidos</string>
+    <string name="backup_failed">O backup falhou</string></resources>

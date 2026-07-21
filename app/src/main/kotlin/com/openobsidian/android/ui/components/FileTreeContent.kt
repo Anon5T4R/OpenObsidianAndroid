@@ -172,6 +172,10 @@ fun FileTreeContent(
     onReview: () -> Unit = {},
     /** Cards due today, shown as a badge — 0 hides it */
     dueCards: Int = 0,
+    /** Abre o diagnóstico do vault (links mortos, órfãs, nomes duplicados) */
+    onDiagnostics: () -> Unit = {},
+    /** Abre o seletor de destino do backup .zip */
+    onBackup: () -> Unit = {},
     templates: List<Node.File> = emptyList(),
     onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
     /** Quando não-nulo, mostra um botão de recolher a barra (tela larga/paisagem). */
@@ -186,7 +190,8 @@ fun FileTreeContent(
     }
     var filter      by rememberSaveable { mutableStateOf("") }
     var dialog      by remember { mutableStateOf<PendingDialog?>(null) }
-    var showAddMenu by remember { mutableStateOf(false) }
+    var showAddMenu   by remember { mutableStateOf(false) }
+    var showVaultMenu by remember { mutableStateOf(false) }
 
     val rows = remember(tree, expanded, filter, sortOrder, pinnedUris) {
         if (tree == null) emptyList() else buildRows(tree, expanded, filter, sortOrder, pinnedUris)
@@ -270,6 +275,31 @@ fun FileTreeContent(
                             },
                         )
                     }
+                }
+            }
+
+            // ── Ações do vault ────────────────────────────────────────────
+            // Aqui, e não no menu ⋮ da nota: aquele só existe com uma nota
+            // aberta, então diagnóstico e backup ficariam inalcançáveis
+            // justamente para quem acabou de abrir o app.
+            Box {
+                IconButton(onClick = { showVaultMenu = true }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more), modifier = Modifier.size(20.dp))
+                }
+                DropdownMenu(
+                    expanded         = showVaultMenu,
+                    onDismissRequest = { showVaultMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text        = { Text(stringResource(R.string.menu_diagnostics)) },
+                        leadingIcon = { Icon(Icons.Default.HealthAndSafety, null) },
+                        onClick     = { showVaultMenu = false; onDiagnostics() },
+                    )
+                    DropdownMenuItem(
+                        text        = { Text(stringResource(R.string.menu_backup)) },
+                        leadingIcon = { Icon(Icons.Default.Archive, null) },
+                        onClick     = { showVaultMenu = false; onBackup() },
+                    )
                 }
             }
 

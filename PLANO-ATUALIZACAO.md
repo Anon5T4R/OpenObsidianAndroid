@@ -30,7 +30,9 @@
 | Estatísticas de revisão (retenção, previsão) | ❌ | Fase 3 |
 | **i18n (PT-BR / EN / ES)** | ✅ 2.1.0 | ~95 strings em strings.xml + values-pt-rBR + values-es |
 | **Mermaid** | ✅ 2.0.0 | Toque abre em tela cheia com zoom; `mermaid.min.js` nos assets, WebView sem rede |
-| EPUB, backup do vault, cache persistente do índice | ❌ | Fase 3 |
+| **Backup do vault (.zip)** | ✅ 2.3.0 | Destino via SAF; inclui anexos e estado |
+| **Cache persistente do índice** | ✅ 2.3.0 | Validado por mtime, fora do vault |
+| EPUB | ❌ | Fase 3 |
 | Grafo (D3) | ❌ | **Não portar** — tentado e removido de propósito (commit 4b90284) |
 | Chat/IA local, sistema de plugins | ❌ | Fora de escopo no mobile |
 

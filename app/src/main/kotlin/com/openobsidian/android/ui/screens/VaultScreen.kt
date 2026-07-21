@@ -7,6 +7,8 @@ import android.print.PrintManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -70,6 +72,13 @@ fun VaultScreen(
     // Estado por nota: sumário (TOC) e barra de buscar/substituir
     var tocOpen     by remember(state.activeFile?.uri) { mutableStateOf(false) }
     var findBarOpen by remember(state.activeFile?.uri) { mutableStateOf(false) }
+
+    // O destino do backup é escolhido pelo seletor do sistema: assim o .zip
+    // pode ir para o Drive, para o cartão SD ou para onde o usuário quiser,
+    // sem o app pedir permissão de armazenamento nenhuma.
+    val backupPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+    ) { dest -> if (dest != null) vm.backupVault(dest) }
 
     // Barra lateral fixa (tela larga/paisagem): recolher/expandir.
     // No retrato (modal) isso não se aplica — lá o gesto de puxar cuida disso.
@@ -152,6 +161,8 @@ fun VaultScreen(
             onDailyNote    = { vm.openDailyNote() },
             onReview       = { vm.startReview() },
             dueCards       = state.srsStats.due,
+            onDiagnostics  = { vm.openDiagnostics() },
+            onBackup       = { backupPicker.launch(vm.backupFileName()) },
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
             // Botão de recolher só na barra fixa (tela larga); no modal é null.

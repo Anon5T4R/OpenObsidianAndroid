@@ -154,4 +154,8 @@
     <string name="diagnostics_broken">Broken links (%1$d)</string>
     <string name="diagnostics_orphans">Orphan notes (%1$d)</string>
     <string name="diagnostics_duplicates">Duplicate names (%1$d)</string>
-    <string name="diagnostics_notes_count">%1$d notes with this name</string></resources>
+    <string name="diagnostics_notes_count">%1$d notes with this name</string>    <string name="menu_backup">Back up vault (.zip)</string>
+    <string name="backup_running">Backing up…</string>
+    <string name="backup_done">%1$d files backed up</string>
+    <string name="backup_done_skipped">%1$d files backed up · %2$d could not be read</string>
+    <string name="backup_failed">Backup failed</string></resources>

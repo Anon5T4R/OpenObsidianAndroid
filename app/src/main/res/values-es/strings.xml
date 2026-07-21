@@ -147,4 +147,8 @@
     <string name="diagnostics_broken">Enlaces rotos (%1$d)</string>
     <string name="diagnostics_orphans">Notas huérfanas (%1$d)</string>
     <string name="diagnostics_duplicates">Nombres duplicados (%1$d)</string>
-    <string name="diagnostics_notes_count">%1$d notas con este nombre</string></resources>
+    <string name="diagnostics_notes_count">%1$d notas con este nombre</string>    <string name="menu_backup">Copia del vault (.zip)</string>
+    <string name="backup_running">Haciendo la copia…</string>
+    <string name="backup_done">%1$d archivos en la copia</string>
+    <string name="backup_done_skipped">%1$d archivos en la copia · %2$d no se pudieron leer</string>
+    <string name="backup_failed">La copia falló</string></resources>

@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **2.2.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **2.3.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,13 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Robustez
+- **Cache do índice entre sessões**: o texto das notas fica guardado e validado
+  por data de modificação. Antes o app relia o vault inteiro a cada abertura —
+  uma leitura por nota, através do SAF, que é a coisa mais lenta que ele faz.
+- **Backup do vault em `.zip`** (⋮ na gaveta), no destino que você escolher.
+  Inclui tudo: anexos, PDFs e o agendamento dos flashcards.
 
 ### Navegação e busca
 - **Wikilinks completos**: `[[Nota#Seção]]`, `[[Pasta/Nota]]` e **aliases** do

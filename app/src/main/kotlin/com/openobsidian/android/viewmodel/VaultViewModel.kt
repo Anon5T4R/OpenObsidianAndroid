@@ -19,6 +19,7 @@ import com.openobsidian.android.data.SafFs
 import com.openobsidian.android.data.Srs
 import com.openobsidian.android.data.SrsStore
 import com.openobsidian.android.data.Tree
+import com.openobsidian.android.data.VaultBackup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -659,6 +660,32 @@ class VaultViewModel(
 
     fun closeDiagnostics() = _state.update { it.copy(diagnosticsOpen = false) }
 
+    // ── Vault backup ──────────────────────────────────────────────────────
+
+    /** File name to suggest in the system's "create document" dialog. */
+    fun backupFileName(): String =
+        VaultBackup.suggestedName(_state.value.tree?.name ?: "vault")
+
+    /** Zips the vault into the destination the user picked. */
+    fun backupVault(destUri: Uri) {
+        viewModelScope.launch {
+            _state.update { it.copy(backingUp = true) }
+            val result = runCatching { VaultBackup.zipVault(appContext, vaultUri, destUri) }
+            _state.update { it.copy(backingUp = false) }
+            result.onSuccess { r ->
+                // Saying how many files could not be read matters more than the
+                // success message: a backup missing something has to admit it
+                toast(
+                    if (r.skipped > 0) appContext.getString(R.string.backup_done_skipped, r.files, r.skipped)
+                    else appContext.getString(R.string.backup_done, r.files),
+                )
+            }.onFailure {
+                toast(appContext.getString(R.string.backup_failed))
+                android.util.Log.w("OpenObsidian", "backup failed", it)
+            }
+        }
+    }
+
     // ── Index / backlinks ─────────────────────────────────────────────────
 
     /** True once the on-disk cache has been consulted for this vault. */
@@ -967,6 +994,8 @@ data class VaultUiState(
     val tagsByPath: Map<String, List<String>>   = emptyMap(),
     // ── Diagnóstico do vault
     val diagnosticsOpen: Boolean                    = false,
+    /** Um backup em andamento; a interface mostra progresso em vez de parecer travada */
+    val backingUp: Boolean                          = false,
     val brokenLinks: List<LinkResolver.Broken>      = emptyList(),
     val orphanNotes: List<String>                   = emptyList(),
     val duplicateNames: List<Pair<String, Int>>     = emptyList(),
