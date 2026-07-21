@@ -173,12 +173,23 @@ class VaultViewModel(
     private fun loadFileContent(file: Node.File) {
         if (!file.isText) return
         viewModelScope.launch {
-            val text = runCatching { SafFs.readText(appContext, file.uri) }.getOrDefault("")
+            val text = SafFs.readTextOrNull(appContext, file.uri)
             _state.update { s ->
-                if (s.activeFile?.uri == file.uri) {
-                    val newCache = s.contentCache + (file.uri.toString() to text)
-                    s.copy(activeContent = text, contentLoading = false, contentCache = newCache)
-                } else s
+                if (s.activeFile?.uri != file.uri) return@update s
+                if (text == null) {
+                    // Never show an unreadable note as an empty one. The editor
+                    // would look like a blank page, the first keystroke would
+                    // make autosave write that blank over a note that is still
+                    // fine on disk, and nothing would have warned anyone.
+                    s.copy(contentLoading = false, unreadable = true, activeContent = "")
+                } else {
+                    s.copy(
+                        activeContent = text,
+                        contentLoading = false,
+                        unreadable = false,
+                        contentCache = s.contentCache + (file.uri.toString() to text),
+                    )
+                }
             }
         }
     }
@@ -186,7 +197,10 @@ class VaultViewModel(
     // ── Edit ──────────────────────────────────────────────────────────────
 
     fun updateContent(text: String) {
-        val file = _state.value.activeFile ?: return
+        val s0 = _state.value
+        val file = s0.activeFile ?: return
+        // What was never read must not be overwritten
+        if (s0.unreadable) return
         _state.update { s ->
             val newCache = s.contentCache + (file.uri.toString() to text)
             s.copy(activeContent = text, isDirty = true, contentCache = newCache)
@@ -202,10 +216,28 @@ class VaultViewModel(
         autosaveJob?.cancel()
         val s    = _state.value
         val file = s.activeFile ?: return
+        if (s.unreadable) return
         viewModelScope.launch {
-            runCatching { SafFs.writeText(appContext, file.uri, s.activeContent) }
-            _state.update { it.copy(isDirty = false) }
+            val ok = writeNote(file, s.activeContent)
+            // The dirty mark used to be cleared no matter what, so a failed save
+            // looked exactly like a successful one — the app claimed to have
+            // saved. It only comes off when the bytes actually landed.
+            if (ok) _state.update { it.copy(isDirty = false, saveError = null) }
         }
+    }
+
+    /** Writes a note, reporting failure instead of swallowing it. */
+    private suspend fun writeNote(file: Node.File, content: String): Boolean {
+        val tree = _state.value.tree
+        val parent = tree?.let { findParentUri(file, it) }
+        return runCatching {
+            SafFs.writeTextChecked(appContext, file.uri, content, parent, file.name)
+        }.onFailure { e ->
+            val msg = "Could not save \"${'$'}{file.displayName}\" — the file on disk is still the previous version"
+            _state.update { it.copy(saveError = msg) }
+            toast(msg)
+            android.util.Log.w("OpenObsidian", "save failed for ${'$'}{file.name}", e)
+        }.isSuccess
     }
 
     fun setViewMode(mode: ViewMode) {
@@ -389,8 +421,58 @@ class VaultViewModel(
                 }
                 is Node.Dir -> newName
             }
-            runCatching { SafFs.rename(appContext, node.uri, safeName) }
+            val oldDisplay = when (node) {
+                is Node.File -> node.displayName
+                is Node.Dir  -> node.name
+            }
+            val renamed = runCatching { SafFs.rename(appContext, node.uri, safeName) }.getOrNull()
+            if (renamed == null) {
+                toast("Couldn't rename \"${'$'}{node.name}\"")
+                loadTree()
+                return@launch
+            }
+            // A rename used to break every [[link]] pointing at the note, in
+            // silence. Only notes have links; a folder rename has none to fix.
+            if (node is Node.File && node.isText) {
+                val newDisplay = safeName.removeSuffix(".md")
+                if (!newDisplay.equals(oldDisplay, ignoreCase = true)) {
+                    rewriteLinksAfterRename(oldDisplay, newDisplay)
+                }
+            }
             loadTree()
+        }
+    }
+
+    /**
+     * Points every `[[oldName]]` in the vault at [newName].
+     * The desktop asks first and reports the count; here the count is reported
+     * after the fact, which keeps the operation one tap instead of two — but it
+     * is never silent, which was the actual problem.
+     */
+    private suspend fun rewriteLinksAfterRename(oldName: String, newName: String) {
+        val s = _state.value
+        val tree = s.tree ?: return
+        var links = 0
+        var notes = 0
+        val updatedCache = s.contentCache.toMutableMap()
+
+        for (file in tree.allMarkdownFiles) {
+            val key = file.uri.toString()
+            val text = s.contentCache[key] ?: SafFs.readTextOrNull(appContext, file.uri) ?: continue
+            val result = LinkRewrite.rewriteLinks(text, oldName, newName)
+            if (result.count == 0) continue
+            val ok = runCatching {
+                SafFs.writeTextChecked(appContext, file.uri, result.content)
+            }.isSuccess
+            if (!ok) continue
+            updatedCache[key] = result.content
+            links += result.count
+            notes++
+        }
+
+        if (notes > 0) {
+            _state.update { it.copy(contentCache = updatedCache) }
+            toast("${'$'}links link(s) updated in ${'$'}notes note(s)")
         }
     }
 
@@ -524,12 +606,13 @@ class VaultViewModel(
             val newEntries = withContext(Dispatchers.IO) {
                 uncached.map { file ->
                     async {
-                        val text = runCatching {
-                            SafFs.readText(appContext, file.uri)
-                        }.getOrDefault("")
-                        file.uri.toString() to text
+                        // A failed read is left out entirely. Caching it as ""
+                        // would drop the note from backlinks, tags and search
+                        // with nothing to show for it.
+                        SafFs.readTextOrNull(appContext, file.uri)
+                            ?.let { file.uri.toString() to it }
                     }
-                }.awaitAll().toMap()
+                }.awaitAll().filterNotNull().toMap()
             }
 
             _state.update { s2 ->
@@ -555,10 +638,10 @@ class VaultViewModel(
     private fun flushDirty() {
         autosaveJob?.cancel()
         val s = _state.value
-        if (!s.isDirty || s.activeFile == null) return
-        viewModelScope.launch {
-            runCatching { SafFs.writeText(appContext, s.activeFile.uri, s.activeContent) }
-        }
+        if (!s.isDirty || s.activeFile == null || s.unreadable) return
+        val file = s.activeFile
+        val content = s.activeContent
+        viewModelScope.launch { writeNote(file, content) }
     }
 
     companion object {
@@ -651,6 +734,10 @@ data class VaultUiState(
     val activeContent: String   = "",
     val contentLoading: Boolean = false,
     val isDirty: Boolean        = false,
+    /** The open note could not be read; editing and saving are blocked */
+    val unreadable: Boolean     = false,
+    /** Last save failure, shown in the bar so it does not vanish like a toast */
+    val saveError: String?      = null,
     val viewMode: ViewMode      = ViewMode.PREVIEW,
     // ── Navigation history
     val navHistory: List<Node.File> = emptyList(),

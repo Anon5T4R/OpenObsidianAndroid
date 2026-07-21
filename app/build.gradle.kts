@@ -66,6 +66,16 @@ android {
     }
 
     sourceSets["main"].kotlin.srcDirs("src/main/kotlin")
+    sourceSets["test"].kotlin.srcDirs("src/test/kotlin")
+
+    testOptions {
+        unitTests {
+            // Srs/Cards use org.json, which is stubbed to throw in unit tests
+            // unless the real implementation is returned instead
+            isReturnDefaultValues = false
+            isIncludeAndroidResources = false
+        }
+    }
 
     packaging {
         resources {
@@ -116,6 +126,13 @@ dependencies {
     // LaTeX ($$…$$ e $…$) via JLatexMath; inline-parser é pré-requisito dos inlines
     implementation("io.noties.markwon:ext-latex:4.6.2")
     implementation("io.noties.markwon:inline-parser:4.6.2")
+
+    // ── Testes (JVM) ─────────────────────────────────────────────────────
+    // A logica pura — reescrita de links, frontmatter, cartoes e SM-2 — roda
+    // sem Android. json vem do Maven porque o org.json do SDK e um stub que
+    // lanca excecao em teste unitario.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 
     // ── Debug / preview ──────────────────────────────────────────────────
     debugImplementation("androidx.compose.ui:ui-tooling")

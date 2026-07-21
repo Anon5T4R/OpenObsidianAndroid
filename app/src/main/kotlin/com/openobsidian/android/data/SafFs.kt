@@ -141,6 +141,21 @@ object SafFs {
         context.contentResolver.openInputStream(fileUri)?.use { it.readBytes().decodeToString() } ?: ""
     }
 
+    /**
+     * The note's text, or null when it could not be read.
+     *
+     * The difference from [readText] is the whole point: returning "" for an
+     * unreadable file was the most expensive answer possible. The editor opened
+     * empty, and the first keystroke made autosave write that emptiness over a
+     * note that was still perfectly fine on disk. A null says "I don't know",
+     * and the caller can refuse to overwrite what it never read.
+     */
+    suspend fun readTextOrNull(context: Context, fileUri: Uri): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(fileUri)?.use { it.readBytes().decodeToString() }
+        }.getOrNull()
+    }
+
     suspend fun readBytes(context: Context, fileUri: Uri): ByteArray = withContext(Dispatchers.IO) {
         context.contentResolver.openInputStream(fileUri)?.use {
             val buf = ByteArrayOutputStream()
@@ -154,6 +169,61 @@ object SafFs {
             it.write(content.toByteArray(Charsets.UTF_8))
             it.flush()
         }
+    }
+
+    /**
+     * Writes a note and says so — the caller learns whether the bytes landed.
+     *
+     * A null output stream used to mean the write silently did nothing, which
+     * is how a save can fail with the app showing no sign of it.
+     *
+     * SAF gives no atomic replace: `renameDocument` refuses to overwrite an
+     * existing name, so the desktop's write-then-rename cannot be reproduced
+     * here. What is possible is to never be in a state where the only copy is
+     * the truncated one — hence the sibling `.name.bak`, written before the
+     * truncating write and removed once the real one is confirmed. `"wt"` means
+     * truncate first, and on Android the process is killed as a matter of
+     * routine, not as an exception.
+     *
+     * Throws on failure. Callers must not clear the "unsaved" mark unless this
+     * returns normally.
+     */
+    suspend fun writeTextChecked(
+        context: Context,
+        fileUri: Uri,
+        content: String,
+        backupDir: Uri? = null,
+        backupName: String? = null,
+    ) = withContext(Dispatchers.IO) {
+        // The name starts with a dot: walkVault skips dotfiles, so the copy
+        // never shows up as a phantom note in the tree
+        var backup: Uri? = null
+        if (backupDir != null && backupName != null) {
+            val previous = runCatching {
+                context.contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
+            }.getOrNull()
+            if (previous != null && previous.isNotEmpty()) {
+                backup = runCatching {
+                    val uri = DocumentsContract.createDocument(
+                        context.contentResolver, toDocumentUri(backupDir),
+                        "application/octet-stream", ".$backupName.bak",
+                    )
+                    uri?.also { u ->
+                        context.contentResolver.openOutputStream(u, "wt")?.use { it.write(previous) }
+                    }
+                }.getOrNull()
+            }
+        }
+
+        val stream = context.contentResolver.openOutputStream(fileUri, "wt")
+            ?: throw java.io.IOException("The system did not let this file be opened for writing")
+        stream.use {
+            it.write(content.toByteArray(Charsets.UTF_8))
+            it.flush()
+        }
+
+        // The write landed; the copy has done its job
+        backup?.let { runCatching { DocumentsContract.deleteDocument(context.contentResolver, it) } }
     }
 
     // ── Create / delete / rename ──────────────────────────────────────────
