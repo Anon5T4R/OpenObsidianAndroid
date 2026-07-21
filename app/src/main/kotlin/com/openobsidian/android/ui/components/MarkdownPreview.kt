@@ -15,8 +15,10 @@ import io.noties.markwon.ext.tasklist.TaskListSpan
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -74,6 +76,17 @@ fun MarkdownPreview(
         imageResolverRef.value = resolveImage
         contentRef.value       = content
         toggleRef.value        = onToggleCheckbox
+    }
+
+    // The tapped Mermaid diagram, opened full screen. Held in a ref as well
+    // because the link resolver lives inside a `remember`d Markwon instance
+    // and would otherwise capture a stale setter.
+    var mermaidSource by remember { mutableStateOf<String?>(null) }
+    val mermaidRef = remember { mutableStateOf<(String) -> Unit>({}) }
+    SideEffect { mermaidRef.value = { src -> mermaidSource = src } }
+
+    mermaidSource?.let { src ->
+        MermaidDialog(source = src, onClose = { mermaidSource = null })
     }
 
     val markwon = remember(context, fontSize, textColor) {
@@ -143,6 +156,17 @@ fun MarkdownPreview(
                         if (link.startsWith("openobsidian:")) {
                             val name = Uri.decode(link.removePrefix("openobsidian:"))
                             callbackRef.value(name)
+                        } else if (link.startsWith("mermaid:")) {
+                            val src = runCatching {
+                                String(
+                                    android.util.Base64.decode(
+                                        link.removePrefix("mermaid:"),
+                                        android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE,
+                                    ),
+                                    Charsets.UTF_8,
+                                )
+                            }.getOrNull()
+                            if (src != null) mermaidRef.value(src)
                         } else {
                             runCatching {
                                 view.context.startActivity(
@@ -272,10 +296,34 @@ fun MarkdownPreview(
  *   > [!warning] Título      → > ⚠️ **Título**  (callouts do Obsidian)
  *   \[…\] · \(…\) · $…$      → $$…$$            (formas que o ext-latex entende)
  */
+// A ```mermaid fence, captured with its source.
+private val MERMAID_FENCE = Regex(
+    "(?m)^[ \\t]*```[ \\t]*mermaid[ \\t]*\\r?\\n([\\s\\S]*?)^[ \\t]*```[ \\t]*$",
+)
+
+/**
+ * Turns a ```mermaid block into a tappable link.
+ *
+ * Has to run before [mapOutsideCodeFences], which exists precisely to leave
+ * fences alone — and a mermaid block *is* a fence.
+ *
+ * The source travels base64-encoded inside the link, so nothing has to be kept
+ * in sync between this pass and the tap handler, and a diagram containing
+ * brackets or parentheses cannot break the Markdown link it lives in.
+ */
+private fun linkifyMermaid(content: String): String =
+    MERMAID_FENCE.replace(content) { m ->
+        val encoded = android.util.Base64.encodeToString(
+            m.groupValues[1].toByteArray(Charsets.UTF_8),
+            android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE,
+        )
+        "\n[📊 Open diagram](mermaid:$encoded)\n"
+    }
+
 private fun preprocessMarkdown(
     content: String,
     resolveImage: ((String) -> Uri?)? = null,
-): String = mapOutsideCodeFences(content) { segment ->
+): String = mapOutsideCodeFences(linkifyMermaid(content)) { segment ->
     var out = segment
 
     // ── Callouts > [!tipo] Título (o sufixo +/- de colapso é ignorado) ────
