@@ -9,6 +9,8 @@ import com.openobsidian.android.R
 import com.openobsidian.android.data.Cards
 import com.openobsidian.android.data.DocxConverter
 import com.openobsidian.android.data.Frontmatter
+import com.openobsidian.android.data.IndexCache
+import com.openobsidian.android.data.IndexStore
 import com.openobsidian.android.data.LinkResolver
 import com.openobsidian.android.data.LinkRewrite
 import com.openobsidian.android.data.SearchQuery
@@ -659,20 +661,41 @@ class VaultViewModel(
 
     // ── Index / backlinks ─────────────────────────────────────────────────
 
+    /** True once the on-disk cache has been consulted for this vault. */
+    private var diskCacheLoaded = false
+
     private fun buildIndex() {
         val s    = _state.value
         val tree = s.tree ?: return
-        val uncached = tree.allMarkdownFiles.filter {
-            !s.contentCache.containsKey(it.uri.toString())
-        }
-        // Sync the cards even when there is nothing new to read: writing a card
-        // into an already-cached note does not change the index, but it does
-        // change the cards — and that is how a card just written never showed
-        // up in the counter, leaving the review button hidden for good.
-        if (uncached.isEmpty()) { syncCards(); return }
 
         _state.update { it.copy(indexing = true) }
         viewModelScope.launch {
+            val files = tree.allMarkdownFiles
+            val refs = files.map { IndexCache.Ref(it.uri.toString(), it.mtime) }
+
+            // The cache from the last session, consulted once per vault. What
+            // it holds with a matching mtime is not read from the provider
+            // again — over SAF that read is the slowest thing the app does.
+            var fromDisk = emptyMap<String, String>()
+            if (!diskCacheLoaded) {
+                diskCacheLoaded = true
+                val stored = IndexStore.load(appContext, vaultUri)
+                if (stored.isNotEmpty()) fromDisk = IndexCache.freshContent(refs, stored)
+            }
+
+            val known = s.contentCache + fromDisk
+            val uncached = files.filter { !known.containsKey(it.uri.toString()) }
+
+            // Sync the cards even when there is nothing new to read: writing a
+            // card into an already-cached note does not change the index, but
+            // it does change the cards — and that is how a card just written
+            // never showed up in the counter, leaving the button hidden.
+            if (uncached.isEmpty() && fromDisk.isEmpty()) {
+                _state.update { it.copy(indexing = false) }
+                syncCards()
+                return@launch
+            }
+
             val newEntries = withContext(Dispatchers.IO) {
                 uncached.map { file ->
                     async {
@@ -683,12 +706,13 @@ class VaultViewModel(
                             ?.let { file.uri.toString() to it }
                     }
                 }.awaitAll().filterNotNull().toMap()
-            }
+            } + fromDisk
 
             _state.update { s2 ->
                 val newCache     = s2.contentCache + newEntries
-                val files        = s2.tree?.allMarkdownFiles ?: emptyList()
-                val newBacklinks = computeBacklinks(files, newCache)
+                val indexed      = s2.tree?.allMarkdownFiles ?: emptyList()
+                val newBacklinks = computeBacklinks(indexed, newCache)
+                val files        = indexed
 
                 // Frontmatter rides along with this pass — the text is already
                 // here, and both the alias index and the tag index come from it
@@ -715,6 +739,11 @@ class VaultViewModel(
             val q = _state.value.searchQuery
             if (q.isNotBlank()) setSearchQuery(q)
             syncCards()
+
+            // Persist what was just read, so the next launch does not re-read
+            // the whole vault over the provider
+            val cache = _state.value.contentCache
+            IndexStore.save(appContext, vaultUri, IndexCache.toEntries(refs, cache))
         }
     }
 
