@@ -147,4 +147,5 @@
     <string name="toast_move_into_itself">Can\'t move a folder into itself</string>
     <string name="toast_name_exists">\"%1$s\" already exists there</string>
     <string name="toast_move_failed">Couldn\'t move \"%1$s\"</string>
+    <string name="toast_link_unresolved">No note called \"%1$s\"</string>
 </resources>

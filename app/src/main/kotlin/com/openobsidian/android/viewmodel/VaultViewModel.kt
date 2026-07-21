@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.openobsidian.android.R
 import com.openobsidian.android.data.Cards
 import com.openobsidian.android.data.DocxConverter
+import com.openobsidian.android.data.Frontmatter
+import com.openobsidian.android.data.LinkResolver
 import com.openobsidian.android.data.LinkRewrite
+import com.openobsidian.android.data.SearchQuery
 import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.SafFs
 import com.openobsidian.android.data.Srs
@@ -605,10 +608,54 @@ class VaultViewModel(
             _state.update { it.copy(searchResults = emptyList()) }
             return
         }
-        val needle  = query.trim().lowercase()
-        val results = runSearch(needle, _state.value.contentCache, _state.value.tree)
+        val s = _state.value
+        val results = runSearch(query, s.contentCache, s.tree, s.tagsByPath)
         _state.update { it.copy(searchResults = results) }
     }
+
+    // ── Link resolution ───────────────────────────────────────────────────
+
+    private fun refsOf(tree: Tree?): List<LinkResolver.Ref> =
+        tree?.allMarkdownFiles.orEmpty().map {
+            LinkResolver.Ref(it.displayName, it.relativePath, it.uri.toString())
+        }
+
+    /**
+     * Opens what a `[[wikilink]]` points at.
+     *
+     * Used to be an exact-name `find()`, so `[[Nota#Seção]]`, `[[Pasta/Nota]]`
+     * and any alias simply did nothing when tapped — no note, no message.
+     */
+    fun openByLink(rawTarget: String) {
+        val s = _state.value
+        val target = LinkResolver.parseTarget(rawTarget)
+        // `[[#Seção]]` points inside the open note; there is nowhere to navigate
+        if (target.name.isEmpty()) return
+        val refs = refsOf(s.tree)
+        val hit = LinkResolver.resolve(refs, target.name, s.activeFile?.relativePath, s.aliases)
+        if (hit == null) {
+            toast(appContext.getString(R.string.toast_link_unresolved, target.name))
+            return
+        }
+        s.tree?.allMarkdownFiles?.firstOrNull { it.uri.toString() == hit.key }?.let { openFile(it) }
+    }
+
+    // ── Vault diagnostics ─────────────────────────────────────────────────
+
+    fun openDiagnostics() {
+        val s = _state.value
+        val refs = refsOf(s.tree)
+        _state.update {
+            it.copy(
+                diagnosticsOpen = true,
+                brokenLinks = LinkResolver.brokenLinks(refs, s.contentCache, s.aliases),
+                orphanNotes = LinkResolver.orphanNotes(refs, s.contentCache).map { r -> r.name },
+                duplicateNames = LinkResolver.duplicateNames(refs).map { d -> d.first to d.second.size },
+            )
+        }
+    }
+
+    fun closeDiagnostics() = _state.update { it.copy(diagnosticsOpen = false) }
 
     // ── Index / backlinks ─────────────────────────────────────────────────
 
@@ -640,13 +687,27 @@ class VaultViewModel(
 
             _state.update { s2 ->
                 val newCache     = s2.contentCache + newEntries
-                val newBacklinks = computeBacklinks(
-                    s2.tree?.allMarkdownFiles ?: emptyList(),
-                    newCache,
-                )
+                val files        = s2.tree?.allMarkdownFiles ?: emptyList()
+                val newBacklinks = computeBacklinks(files, newCache)
+
+                // Frontmatter rides along with this pass — the text is already
+                // here, and both the alias index and the tag index come from it
+                val parsed = files.mapNotNull { f ->
+                    newCache[f.uri.toString()]?.let { f to Frontmatter.parse(it) }
+                }
+                val tags = files.mapNotNull { f ->
+                    newCache[f.uri.toString()]?.let {
+                        f.relativePath to Frontmatter.expandHierarchy(Frontmatter.extractTags(it))
+                    }
+                }.toMap()
+
                 s2.copy(
                     contentCache = newCache,
                     backlinks    = newBacklinks,
+                    aliases      = LinkResolver.buildAliasIndex(
+                        parsed.associate { (f, p) -> f.relativePath to p },
+                    ),
+                    tagsByPath   = tags,
                     indexing     = false,
                 )
             }
@@ -791,17 +852,33 @@ private fun computeBacklinks(
 }
 
 private fun runSearch(
-    needle: String,
+    query: String,
     cache: Map<String, String>,
     tree: Tree?,
+    tagsByPath: Map<String, List<String>>,
 ): List<SearchResult> {
     tree ?: return emptyList()
-    val results = mutableListOf<SearchResult>()
+    val parsed = SearchQuery.parse(query)
+    if (parsed.isEmpty) return emptyList()
+
+    // Only a free-text term has something to highlight inside the body; a
+    // `tag:` filter points at metadata, not at a place in the note
+    val needle = parsed.terms.firstOrNull { !it.exclude && it.field == null }?.text?.lowercase().orEmpty()
+
+    val scored = mutableListOf<Pair<Int, SearchResult>>()
     for (file in tree.allMarkdownFiles) {
-        val content      = cache[file.uri.toString()] ?: continue
-        val contentLower = content.lowercase()
-        val idx = contentLower.indexOf(needle)
-        if (idx < 0) continue
+        val content = cache[file.uri.toString()] ?: continue
+        val note = SearchQuery.Note(
+            name = file.displayName,
+            relativePath = file.relativePath,
+            content = content,
+            tags = tagsByPath[file.relativePath].orEmpty(),
+        )
+        if (!SearchQuery.matches(note, parsed)) continue
+
+        // A tag-only query has nothing to centre the snippet on: start at the top
+        val idx = if (needle.isEmpty()) 0
+        else content.lowercase().indexOf(needle).coerceAtLeast(0)
 
         val lineStart = content.lastIndexOf('\n', idx).let { if (it < 0) 0 else it + 1 }
         val lineEnd   = content.indexOf('\n', idx).let { if (it < 0) content.length else it }
@@ -812,16 +889,18 @@ private fun runSearch(
         val snippet      = line.drop(snippetStart).take(120)
         val matchInSnip  = (matchInLine - snippetStart).coerceAtLeast(0)
 
-        results.add(
-            SearchResult(
-                file        = file,
-                snippet     = snippet,
-                matchStart  = matchInSnip,
-                matchLength = needle.length,
-            )
+        scored += SearchQuery.score(note, parsed) to SearchResult(
+            file        = file,
+            snippet     = snippet,
+            matchStart  = if (needle.isEmpty()) 0 else matchInSnip,
+            matchLength = needle.length,
         )
     }
-    return results.sortedBy { it.file.displayName.lowercase() }
+    // Most relevant first; the name breaks ties so the order is stable
+    return scored
+        .sortedWith(compareByDescending<Pair<Int, SearchResult>> { it.first }
+            .thenBy { it.second.file.displayName.lowercase() })
+        .map { it.second }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -853,6 +932,15 @@ data class VaultUiState(
     val searchOpen: Boolean                     = false,
     val searchQuery: String                     = "",
     val searchResults: List<SearchResult>       = emptyList(),
+    /** alias (minúsculo) → caminho relativo da nota que o declara */
+    val aliases: Map<String, String>            = emptyMap(),
+    /** caminho relativo → tags da nota, já com a hierarquia expandida */
+    val tagsByPath: Map<String, List<String>>   = emptyMap(),
+    // ── Diagnóstico do vault
+    val diagnosticsOpen: Boolean                    = false,
+    val brokenLinks: List<LinkResolver.Broken>      = emptyList(),
+    val orphanNotes: List<String>                   = emptyList(),
+    val duplicateNames: List<Pair<String, Int>>     = emptyList(),
     // ── Flashcards
     val reviewOpen: Boolean                 = false,
     val reviewQueue: List<ReviewCard>       = emptyList(),

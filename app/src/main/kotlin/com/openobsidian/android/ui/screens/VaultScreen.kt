@@ -300,11 +300,9 @@ fun VaultScreen(
                             contentLoading      = state.contentLoading,
                             viewMode            = state.viewMode,
                             onContentChange     = { vm.updateContent(it) },
-                            onWikilinkClick     = { name ->
-                                state.tree?.allMarkdownFiles
-                                    ?.find { it.displayName.equals(name, ignoreCase = true) }
-                                    ?.let { vm.openFile(it) }
-                            },
+                            // Was an exact-name find(), so [[Nota#Seção]],
+                            // [[Pasta/Nota]] and any alias did nothing at all
+                            onWikilinkClick     = { target -> vm.openByLink(target) },
                             backlinks           = activeBacklinks,
                             onBacklinkClick     = { vm.openFile(it) },
                             onOpenCompanionNote = { vm.openCompanionNote(state.activeFile!!) },

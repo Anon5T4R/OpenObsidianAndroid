@@ -140,4 +140,5 @@
     <string name="toast_move_into_itself">Não dá para mover uma pasta para dentro dela mesma</string>
     <string name="toast_name_exists">\"%1$s\" já existe lá</string>
     <string name="toast_move_failed">Não consegui mover \"%1$s\"</string>
+    <string name="toast_link_unresolved">Nenhuma nota chamada \"%1$s\"</string>
 </resources>
