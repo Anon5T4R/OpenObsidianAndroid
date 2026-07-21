@@ -161,4 +161,12 @@
     <string name="stats_suspended">Suspensos</string>
     <string name="stats_forecast">Próximos 14 dias</string>
     <string name="stats_top_notes">Notas com mais cartões</string>    <string name="epub_unreadable">Não consegui ler este EPUB.</string>
-</resources>
+    <string name="menu_anki_import">Importar do Anki (.apkg)</string>
+    <string name="anki_reading">Lendo o baralho…</string>
+    <string name="anki_confirm_title">Importar do Anki</string>
+    <string name="anki_confirm_body">%1$d cartões encontrados. Vão para %2$d nota(s) com o nome \"%3$s\".</string>
+    <string name="anki_import">Importar</string>
+    <string name="anki_done">%1$d cartões importados em %2$d nota(s)</string>
+    <string name="anki_failed">Não consegui ler esse .apkg</string>
+    <string name="anki_needs_legacy">Este pacote usa o formato comprimido novo do Anki, que este app não abre. No Anki, exporte o baralho de novo marcando \"Suportar versões antigas do Anki\".</string>
+    <string name="anki_media_note">Imagens e áudio não são importados aqui — importe no desktop se o baralho tiver mídia.</string></resources>

@@ -161,4 +161,12 @@
     <string name="stats_suspended">Suspendidas</string>
     <string name="stats_forecast">Próximos 14 días</string>
     <string name="stats_top_notes">Notas con más tarjetas</string>    <string name="epub_unreadable">No pude leer este EPUB.</string>
-</resources>
+    <string name="menu_anki_import">Importar de Anki (.apkg)</string>
+    <string name="anki_reading">Leyendo el mazo…</string>
+    <string name="anki_confirm_title">Importar de Anki</string>
+    <string name="anki_confirm_body">%1$d tarjetas encontradas. Van a %2$d nota(s) con el nombre \"%3$s\".</string>
+    <string name="anki_import">Importar</string>
+    <string name="anki_done">%1$d tarjetas importadas en %2$d nota(s)</string>
+    <string name="anki_failed">No pude leer ese .apkg</string>
+    <string name="anki_needs_legacy">Este paquete usa el formato comprimido nuevo de Anki, que esta app no abre. En Anki, exporta el mazo otra vez marcando \"Soportar versiones antiguas de Anki\".</string>
+    <string name="anki_media_note">Imágenes y audio no se importan aquí — importa en el escritorio si el mazo tiene medios.</string></resources>

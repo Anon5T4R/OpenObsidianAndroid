@@ -81,6 +81,11 @@ fun VaultScreen(
         ActivityResultContracts.CreateDocument("application/zip"),
     ) { dest -> if (dest != null) vm.backupVault(dest) }
 
+    // O .apkg vem do seletor do sistema, como o backup
+    val ankiPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { picked -> if (picked != null) vm.readAnkiPackage(picked) }
+
     // Barra lateral fixa (tela larga/paisagem): recolher/expandir.
     // No retrato (modal) isso não se aplica — lá o gesto de puxar cuida disso.
     var sidebarCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -137,6 +142,36 @@ fun VaultScreen(
         return
     }
 
+    // ── Anki import: confirma antes de escrever no vault ──────────────────
+    state.ankiPending?.let { pending ->
+        AlertDialog(
+            onDismissRequest = { vm.cancelAnkiImport() },
+            title   = { Text(stringResource(R.string.anki_confirm_title)) },
+            text    = {
+                Column {
+                    Text(stringResource(R.string.anki_confirm_body, pending.cards.size, pending.notes, pending.deck))
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.anki_media_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { vm.confirmAnkiImport() }) { Text(stringResource(R.string.anki_import)) } },
+            dismissButton = { TextButton(onClick = { vm.cancelAnkiImport() }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+    }
+
+    if (state.ankiNeedsLegacy) {
+        AlertDialog(
+            onDismissRequest = { vm.cancelAnkiImport() },
+            title   = { Text(stringResource(R.string.anki_confirm_title)) },
+            text    = { Text(stringResource(R.string.anki_needs_legacy)) },
+            confirmButton = { TextButton(onClick = { vm.cancelAnkiImport() }) { Text(stringResource(R.string.action_ok)) } },
+        )
+    }
+
     // ── Android Back: navigate within the app instead of closing it ───────
     // Priority: open drawer → close it; nav history → step back; open note → close it.
     // Disabled (lets the system exit) only at the root with nothing open.
@@ -170,6 +205,7 @@ fun VaultScreen(
             dueCards       = state.srsStats.due,
             onDiagnostics  = { vm.openDiagnostics() },
             onStats        = { vm.openStats() },
+            onAnkiImport   = { ankiPicker.launch(arrayOf("*/*")) },
             onBackup       = { backupPicker.launch(vm.backupFileName()) },
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },

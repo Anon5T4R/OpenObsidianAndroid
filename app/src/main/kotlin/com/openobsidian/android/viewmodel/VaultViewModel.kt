@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.openobsidian.android.R
+import com.openobsidian.android.data.AnkiImport
+import com.openobsidian.android.data.AnkiPackage
 import com.openobsidian.android.data.Cards
 import com.openobsidian.android.data.DocxConverter
 import com.openobsidian.android.data.Frontmatter
@@ -895,6 +897,43 @@ class VaultViewModel(
 
     fun closeStats() = _state.update { it.copy(statsOpen = false) }
 
+    // ── Anki import ───────────────────────────────────────────────────────
+
+    /** Reads the package and asks before writing anything into the vault. */
+    fun readAnkiPackage(uri: Uri) {
+        viewModelScope.launch {
+            _state.update { it.copy(ankiReading = true, ankiPending = null, ankiNeedsLegacy = false) }
+            val name = AnkiImport.documentName(appContext, uri) ?: "deck.apkg"
+            when (val r = AnkiImport.read(appContext, uri, name)) {
+                is AnkiImport.Result.Ready ->
+                    _state.update { it.copy(ankiReading = false, ankiPending = r) }
+                AnkiImport.Result.NeedsLegacyExport ->
+                    _state.update { it.copy(ankiReading = false, ankiNeedsLegacy = true) }
+                is AnkiImport.Result.Failed -> {
+                    _state.update { it.copy(ankiReading = false) }
+                    toast(appContext.getString(R.string.anki_failed))
+                    android.util.Log.w("OpenObsidian", "apkg read failed: ${r.reason}")
+                }
+            }
+        }
+    }
+
+    fun cancelAnkiImport() =
+        _state.update { it.copy(ankiPending = null, ankiNeedsLegacy = false) }
+
+    /** Writes the deck the user just confirmed. */
+    fun confirmAnkiImport() {
+        val pending = _state.value.ankiPending ?: return
+        val root = _state.value.tree?.rootUri ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(ankiPending = null, ankiReading = true) }
+            val notes = AnkiImport.write(appContext, root, pending.deck, pending.cards)
+            _state.update { it.copy(ankiReading = false) }
+            toast(appContext.getString(R.string.anki_done, pending.cards.size, notes))
+            loadTree()
+        }
+    }
+
     companion object {
         fun factory(appContext: Context, vaultUri: Uri) =
             object : ViewModelProvider.Factory {
@@ -1039,6 +1078,11 @@ data class VaultUiState(
     val reviewDone: Int                     = 0,
     val srsStats: Srs.Stats                 = Srs.Stats(0, 0, 0, 0),
     val statsOpen: Boolean                  = false,
+    // ── Import do Anki
+    val ankiReading: Boolean                        = false,
+    val ankiPending: AnkiImport.Result.Ready?       = null,
+    /** O pacote usa o formato comprimido novo; a tela explica o que fazer */
+    val ankiNeedsLegacy: Boolean                    = false,
     val srsReport: SrsReport.Report          = SrsReport.Report(0, 0, 0, 0, 0, 0.0, 0.0, emptyList(), emptyList()),
     /** The schedule could not be written; the session is not being recorded */
     val reviewError: Boolean                = false,

@@ -168,4 +168,12 @@
     <string name="stats_suspended">Suspended</string>
     <string name="stats_forecast">Next 14 days</string>
     <string name="stats_top_notes">Notes with the most cards</string>    <string name="epub_unreadable">This EPUB could not be read.</string>
-</resources>
+    <string name="menu_anki_import">Import from Anki (.apkg)</string>
+    <string name="anki_reading">Reading the deck…</string>
+    <string name="anki_confirm_title">Import from Anki</string>
+    <string name="anki_confirm_body">%1$d cards found. They go into %2$d note(s) named \"%3$s\".</string>
+    <string name="anki_import">Import</string>
+    <string name="anki_done">%1$d cards imported into %2$d note(s)</string>
+    <string name="anki_failed">Could not read that .apkg</string>
+    <string name="anki_needs_legacy">This package uses Anki\'s new compressed format, which this app cannot open. In Anki, export the deck again ticking \"Support older Anki versions\".</string>
+    <string name="anki_media_note">Images and audio are not imported here — import on the desktop if the deck has media.</string></resources>
