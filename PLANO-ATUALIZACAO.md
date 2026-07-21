@@ -1,72 +1,69 @@
 # Plano de atualização — OpenObsidian Android
 
-> Comparativo entre o **desktop v0.7.5** (Electron) e o **Android 1.2.1**, com o
-> roteiro do que portar. Atualizado em 2026-07-13.
+> Comparativo entre o **desktop v1.0.0** (Electron) e o **Android 1.4.0**.
+> Atualizado em 2026-07-21. A versão anterior deste plano comparava com o
+> desktop v0.7.5 e ficou quatro versões defasada.
 
 ## Onde cada um está
 
-| Recurso (desktop v0.7.5) | Android 1.2.1 | Ação |
+| Recurso (desktop v1.0.0) | Android 1.4.0 | Ação |
 |---|---|---|
-| Editor com realce + modos Edit/Preview/Split | ✅ | — |
+| Editor com realce + Edit/Preview/Split | ✅ | — |
 | Wikilinks, backlinks, busca full-text | ✅ | — |
-| Daily note, nota companheira, pin | ✅ | — |
-| Tabelas, task lists (checkbox clicável), ~~tachado~~, ==highlight== | ✅ | — |
-| Imagens no vault + import da galeria | ✅ | — |
-| PDF viewer / DOCX viewer + conversão p/ MD | ✅ | — |
-| Export PDF | ✅ | — |
-| **Matemática KaTeX** (`$$…$$`, `$…$`) | ❌ | **Fase 1** — Markwon `ext-latex` (JLatexMath) |
-| **Callouts Obsidian** (`> [!info]`, 20+ tipos) | ❌ | **Fase 1** — preprocessamento no preview |
-| **Painel TOC** (sumário da nota) | ❌ | **Fase 1** — bottom sheet + scroll até o heading |
-| **Templates** (nova nota de template, template da daily) | ❌ | **Fase 1** — pasta `templates/` do vault |
-| **Find & Replace** na nota (Ctrl+F do editor) | ❌ | **Fase 1** — barra de busca no editor |
-| **Mermaid** (diagramas) | ❌ | Fase 2 — WebView com mermaid.js embarcado |
-| **i18n** (PT-BR / EN / ES) | ❌ (strings em EN hardcoded) | Fase 2 — extrair para `strings.xml` |
-| **Backup do vault** (cópia p/ destino) | ❌ | Fase 2 — export .zip via SAF |
-| **EPUB viewer** | ❌ | Fase 2 — avaliar lib (readium/epublib) |
-| Graph view (D3) | ❌ | **Não portar** — já foi tentado e removido no Android (commit 4b90284) por decisão |
-| Chat/ações de IA (node-llama-cpp) | ❌ | Fora de escopo no mobile |
-| Sistema de plugins | ❌ | Fora de escopo no mobile |
-| Vault index cache (mtime) | parcial (cache em memória) | Fase 2 — persistir cache do índice |
+| Daily note, nota companheira, pin, templates | ✅ | — |
+| Tabelas, checkbox clicável, `==destaque==` | ✅ | — |
+| Imagens, PDF, DOCX + conversão, export PDF | ✅ | — |
+| Matemática (KaTeX / JLatexMath), callouts, TOC, find & replace | ✅ | — |
+| **Renomear reescreve os `[[links]]`** | ✅ 1.4.0 | — |
+| **Gravação que falha aparece; nota ilegível não abre vazia** | ✅ 1.4.0 | — |
+| **Frontmatter YAML + tags com acento/hierarquia** | ✅ 1.4.0 | — |
+| **Flashcards com SM-2 + revisão** | ✅ 1.4.0 | — |
+| Gravação atômica | ⚠️ parcial | SAF não tem substituição atômica; há cópia `.bak` antes de truncar |
+| Wikilink com `#seção` e `Pasta/Nota` | ❌ | Fase 2 — portar `linkResolver` |
+| Embed `![[Nota]]` de nota (imagem já funciona) | ❌ | Fase 2 |
+| Aliases do frontmatter resolvendo links | ❌ | Fase 2 — o parser já lê `aliases:` |
+| Links mortos visíveis + diagnóstico do vault | ❌ | Fase 2 |
+| Busca com operadores (`tag:`, `path:`, frase exata) | ❌ | Fase 2 — o índice de tags já existe |
+| Blocos ```query | ❌ | Fase 3 |
+| Calendário sobre as notas diárias | ❌ | Fase 3 |
+| Import de `.apkg` do Anki | ❌ | Fase 3 — sql.js não serve aqui; avaliar SQLite nativo |
+| Estatísticas de revisão (retenção, previsão) | ❌ | Fase 3 |
+| i18n (PT-BR / EN / ES) | ❌ | Fase 3 — strings em inglês no código |
+| Mermaid | ❌ | Fase 3 — WebView com mermaid.js nos assets (~1 MB no APK) |
+| EPUB, backup do vault, cache persistente do índice | ❌ | Fase 3 |
+| Grafo (D3) | ❌ | **Não portar** — tentado e removido de propósito (commit 4b90284) |
+| Chat/IA local, sistema de plugins | ❌ | Fora de escopo no mobile |
 
-## Fase 1 — v1.3.0 (esta rodada)
+## O que a 1.4.0 fez
 
-1. **Matemática LaTeX no preview** — `io.noties.markwon:ext-latex` +
-   `inline-parser` 4.6.2. Blocos `$$…$$` nativos; inline `$…$` convertido no
-   preprocessamento com a mesma regra anti-falso-positivo do desktop (cifrão
-   seguido de espaço não conta).
-2. **Callouts** — `> [!warning] Título` vira blockquote com emoji + título em
-   negrito (mapa de ~20 tipos igual ao desktop). O sufixo `-` (colapsável no
-   desktop) é aceito e renderizado estático.
-3. **Sumário (TOC)** — item no menu ⋮ da nota; bottom sheet lista os headings
-   (ignorando code blocks); tocar rola o preview até o heading, ou posiciona o
-   cursor no modo Editar.
-4. **Templates** — arquivos `.md` da pasta `templates/` do vault; botão na
-   sidebar cria nota nova a partir de um template com placeholders `{{title}}`,
-   `{{date}}` e `{{time}}`. A daily note passa a usar `templates/daily.md`
-   quando existir.
-5. **Buscar/substituir na nota** — barra no editor com contador de matches,
-   anterior/próximo e substituir (um / todos).
+Integridade primeiro, igual ao que o desktop fez na v0.9.0 e na v1.0.0. Cinco
+caminhos de perda silenciosa estavam abertos aqui, e o primeiro não existia nem
+no desktop:
 
-Fechamento: bump `1.3.0` (versionCode 5) + README atualizado + push com CI
-verde (`ci.yml`, APK debug).
+1. **Leitura que falha virava nota vazia** — `readText` devolvia `""` e o
+   chamador ainda tinha `getOrDefault("")`. O editor abria em branco e a
+   primeira tecla fazia o autosave gravar esse branco por cima de uma nota
+   intacta. Agora `readTextOrNull` devolve `null` e o que não foi lido não é
+   sobrescrito.
+2. **Gravação que falha dizia que deu certo** — `runCatching` engolia o erro e
+   o `isDirty = false` era incondicional.
+3. **Gravação truncava antes de escrever** — sem substituição atômica no SAF,
+   entra uma cópia `.bak` oculta antes.
+4. **Renomear quebrava todos os `[[links]]`**.
+5. **Índice guardava `""` para leitura que falhou**, tirando a nota dos
+   backlinks e da busca sem sinal nenhum.
 
-## Fase 2 — backlog (próximas rodadas)
-
-- **Mermaid**: renderizar blocos ` ```mermaid ` num WebView com mermaid.min.js
-  nos assets (~1 MB no APK). Alternativa: placeholder com o código fonte.
-- **i18n**: extrair strings hardcoded para `res/values/strings.xml` +
-  `values-pt-rBR/` + `values-es/`, espelhando os idiomas do desktop.
-- **Backup do vault**: exportar o vault inteiro como `.zip` para um destino
-  escolhido via SAF (`CreateDocument`).
-- **EPUB**: viewer somente-leitura.
-- **Cache persistente do índice**: hoje o índice de busca/backlinks é
-  reconstruído em memória a cada sessão; persistir por vault (mtime) como o
-  desktop faz.
+E o repo passou a ter testes: **47**, rodando no CI antes do APK. Não havia
+nenhum.
 
 ## Regras de trabalho (deste repo)
 
 - **Sem build local** nesta máquina (sem JDK/Android SDK) — o juiz é o
-  `ci.yml` do GitHub Actions (APK debug). Push primeiro, esperar verde.
-- Release continua **manual/local** (assinatura via `keystore.properties`
-  fora do git); não há release por tag até cadastrar os Secrets da keystore.
+  `ci.yml` do GitHub Actions, que agora roda `testDebugUnitTest` antes do APK.
+  Push primeiro, esperar verde.
+- Release por tag `vX.Y.Z` (a tag tem que bater com o `versionName`), assinada
+  com a keystore que vem dos Secrets `KEYSTORE_B64` e `KEYSTORE_PROPERTIES_B64`.
 - Commits em português, sem Co-Authored-By, estilo "vX.Y.Z: descrição".
+- **Os ids de flashcard são hash de `relativePath::pergunta`, idênticos aos do
+  desktop.** Mexer nisso quebra o `srs.json` compartilhado: cada lado passaria
+  a criar seus próprios ids e o mesmo cartão seria agendado duas vezes.

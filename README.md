@@ -5,11 +5,44 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **1.3.2** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **1.4.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
 ## ✨ Funcionalidades
+
+### Estudo
+- **Flashcards com repetição espaçada (SM-2)** — os cartões moram dentro das
+  suas notas, como callouts:
+
+  ```markdown
+  > [!card]- Qual a tríade do qSOFA?
+  > FR ≥ 22 · PAS ≤ 100 · Glasgow < 15
+
+  > [!card] Ciclo de Krebs
+  > ==Citrato sintase== condensa ==acetil-CoA==.
+  ```
+
+  Cada `==destaque==` vira um cartão de lacuna. Um cartão dentro de outro
+  callout (`> > [!card]` sob um `> [!warning]`) também conta.
+
+- Botão de revisão na barra superior, com o número do que vence hoje. Um cartão
+  por vez, ocupando a tela: revisar no celular compete com tudo mais que está
+  nele, e uma tela densa faz passar o olho em vez de lembrar.
+- O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
+  e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
+  cobrado de novo lá à noite.
+
+### Integridade
+- **Renomear reescreve os `[[links]]`** que apontavam para a nota, preservando
+  `|alias`, `#âncora` e prefixo de pasta, sem tocar em blocos de código.
+- **Nota que não pôde ser lida não abre em branco.** Antes abria vazia e a
+  primeira tecla gravava esse vazio por cima do arquivo, que estava intacto.
+- **Gravação que falha aparece** e a marca de "não salvo" continua acesa.
+- Uma cópia oculta é escrita antes de cada gravação, porque o SAF não oferece
+  substituição atômica e no Android o processo é morto por rotina.
+- **Frontmatter YAML** deixa de aparecer como texto no preview, e as **tags**
+  (com acento e hierarquia `#sistema/cardio`) passam a ser indexadas.
 
 ### Notas e edição
 - **Editor Markdown** com realce de sintaxe ao vivo (títulos, negrito, itálico,

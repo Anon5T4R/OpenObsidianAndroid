@@ -23,8 +23,8 @@ android {
         applicationId = "com.openobsidian.android"
         minSdk = 28
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.3.3"
+        versionCode = 9
+        versionName = "1.4.0"
 
         vectorDrawables { useSupportLibrary = true }
     }
