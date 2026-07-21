@@ -12,8 +12,12 @@ package com.openobsidian.android.data
  */
 object AnkiPackage {
 
-    /** Anki joins a note's fields with the unit separator. */
-    private const val FIELD_SEP = ''
+    /**
+     * Anki joins a note's fields with the unit separator.
+     * Written as an escape on purpose: the raw character is invisible in an
+     * editor and does not survive being copied around.
+     */
+    const val FIELD_SEP = ""
 
     data class Card(val q: String, val a: String, val tags: List<String>, val cloze: Boolean = false)
 
@@ -93,7 +97,7 @@ object AnkiPackage {
                 // A cloze note becomes `> [!card]` with the sentence in the
                 // body, which is the shape extractCards turns into one gap-fill
                 // card per highlight
-                "> [!card] ${title}\n> ${c.q.replace("\n", "\n> ")}"
+                "> [!card] $title\n> ${c.q.replace("\n", "\n> ")}"
             } else {
                 "> [!card]- ${c.q.replace("\n", " ")}\n> ${c.a.replace("\n", "\n> ")}"
             }
