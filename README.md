@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **2.3.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **2.4.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,13 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Consultas
+- **Blocos ` `query ` `** no preview: um índice que se deriva das notas
+  em vez de ser digitado à mão. Filtra por `tag:`, `pasta:`, `has:` e por
+  qualquer campo do frontmatter; ordena e limita.
+- Linha que a consulta não entendeu aparece **acima** da lista — consulta que
+  erra em silêncio devolve uma lista que parece certa.
 
 ### Robustez
 - **Cache do índice entre sessões**: o texto das notas fica guardado e validado

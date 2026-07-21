@@ -24,10 +24,10 @@
 | **Aliases do frontmatter resolvendo links** | ✅ 2.2.0 | — |
 | **Diagnóstico do vault** | ✅ 2.2.0 | Links mortos, órfãs e nomes duplicados |
 | **Busca com operadores** | ✅ 2.2.0 | `tag:`, `path:`, `file:`, frase exata, `-exclusão`, por relevância |
-| Blocos ```query | ❌ | Fase 3 |
+| **Blocos ```query** | ✅ 2.4.0 | tag:, pasta:, has:, campos do frontmatter, ordenar, limite |
 | Calendário sobre as notas diárias | ❌ | Fase 3 |
-| Import de `.apkg` do Anki | ❌ | Fase 3 — sql.js não serve aqui; avaliar SQLite nativo |
-| Estatísticas de revisão (retenção, previsão) | ❌ | Fase 3 |
+| Import de `.apkg` do Anki | ❌ | **Adiado** — o vault é compartilhado: importe no desktop e sincronize. Traria uma dependência nativa de zstd só pro celular |
+| Estatísticas de revisão | ⚠️ parcial | Lógica pronta e testada (SrsReport); falta a tela |
 | **i18n (PT-BR / EN / ES)** | ✅ 2.1.0 | ~95 strings em strings.xml + values-pt-rBR + values-es |
 | **Mermaid** | ✅ 2.0.0 | Toque abre em tela cheia com zoom; `mermaid.min.js` nos assets, WebView sem rede |
 | **Backup do vault (.zip)** | ✅ 2.3.0 | Destino via SAF; inclui anexos e estado |
