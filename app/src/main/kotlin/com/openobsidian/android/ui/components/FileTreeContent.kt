@@ -22,12 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openobsidian.android.R
 import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.SortOrder
 import com.openobsidian.android.data.Tree
@@ -210,24 +212,24 @@ fun FileTreeContent(
 
             // ── Switch vault (à esquerda do calendário) ───────────────────
             IconButton(onClick = onSwitchVault, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.FolderOpen, contentDescription = "Switch vault", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.cd_switch_vault), modifier = Modifier.size(20.dp))
             }
 
             // ── Daily note ────────────────────────────────────────────────
             IconButton(onClick = onDailyNote, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.CalendarToday, contentDescription = "Today's note", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.CalendarToday, contentDescription = stringResource(R.string.cd_daily_note), modifier = Modifier.size(20.dp))
             }
 
             // ── Flashcards ────────────────────────────────────────────────
             IconButton(onClick = onReview, modifier = Modifier.size(36.dp)) {
                 BadgedBox(badge = { if (dueCards > 0) Badge { Text("$dueCards") } }) {
-                    Icon(Icons.Default.Style, contentDescription = "Review flashcards", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Style, contentDescription = stringResource(R.string.cd_review), modifier = Modifier.size(20.dp))
                 }
             }
 
             // ── Refresh ───────────────────────────────────────────────────
             IconButton(onClick = onRefresh, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh), modifier = Modifier.size(20.dp))
             }
 
             // ── Create note / folder ──────────────────────────────────────
@@ -236,14 +238,14 @@ fun FileTreeContent(
                     onClick  = { if (tree != null) showAddMenu = true },
                     modifier = Modifier.size(36.dp),
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "New", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_new), modifier = Modifier.size(20.dp))
                 }
                 DropdownMenu(
                     expanded         = showAddMenu,
                     onDismissRequest = { showAddMenu = false },
                 ) {
                     DropdownMenuItem(
-                        text         = { Text("New note") },
+                        text         = { Text(stringResource(R.string.new_note)) },
                         leadingIcon  = { Icon(Icons.Default.NoteAdd, null) },
                         onClick      = {
                             showAddMenu = false
@@ -251,7 +253,7 @@ fun FileTreeContent(
                         },
                     )
                     DropdownMenuItem(
-                        text         = { Text("New folder") },
+                        text         = { Text(stringResource(R.string.new_folder)) },
                         leadingIcon  = { Icon(Icons.Default.CreateNewFolder, null) },
                         onClick      = {
                             showAddMenu = false
@@ -260,7 +262,7 @@ fun FileTreeContent(
                     )
                     if (templates.isNotEmpty()) {
                         DropdownMenuItem(
-                            text         = { Text("New from template") },
+                            text         = { Text(stringResource(R.string.new_from_template)) },
                             leadingIcon  = { Icon(Icons.Default.ContentCopy, null) },
                             onClick      = {
                                 showAddMenu = false
@@ -274,7 +276,7 @@ fun FileTreeContent(
             // ── Recolher a barra (só existe na barra fixa de tela larga) ──
             if (onCollapseSidebar != null) {
                 IconButton(onClick = onCollapseSidebar, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.MenuOpen, contentDescription = "Collapse sidebar", modifier = Modifier.size(20.dp))
+                    Icon(Icons.AutoMirrored.Filled.MenuOpen, contentDescription = stringResource(R.string.cd_collapse_sidebar), modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -283,13 +285,13 @@ fun FileTreeContent(
         OutlinedTextField(
             value         = filter,
             onValueChange = { filter = it },
-            placeholder   = { Text("Filter notes…") },
+            placeholder   = { Text(stringResource(R.string.filter_notes)) },
             singleLine    = true,
             leadingIcon   = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon  = {
                 if (filter.isNotEmpty()) {
                     IconButton(onClick = { filter = "" }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_clear))
                     }
                 }
             },
@@ -410,7 +412,7 @@ private fun TemplatePickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New note from template") },
+        title = { Text(stringResource(R.string.new_note_from_template)) },
         text  = {
             LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                 items(templates, key = { it.uri.toString() }) { t ->
@@ -440,7 +442,7 @@ private fun TemplatePickerDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -512,28 +514,28 @@ private fun DirItem(
 
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
             DropdownMenuItem(
-                text        = { Text("New note here") },
+                text        = { Text(stringResource(R.string.new_note_here)) },
                 leadingIcon = { Icon(Icons.Default.NoteAdd, null) },
                 onClick     = { showMenu = false; onNewFile() },
             )
             DropdownMenuItem(
-                text        = { Text("New folder here") },
+                text        = { Text(stringResource(R.string.new_folder_here)) },
                 leadingIcon = { Icon(Icons.Default.CreateNewFolder, null) },
                 onClick     = { showMenu = false; onNewFolder() },
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text        = { Text("Rename") },
+                text        = { Text(stringResource(R.string.action_rename)) },
                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                 onClick     = { showMenu = false; onRename() },
             )
             DropdownMenuItem(
-                text        = { Text("Move to…") },
+                text        = { Text(stringResource(R.string.move_to)) },
                 leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
                 onClick     = { showMenu = false; onMove() },
             )
             DropdownMenuItem(
-                text        = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                text        = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Delete,
@@ -611,7 +613,7 @@ private fun FileItem(
 
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
             DropdownMenuItem(
-                text        = { Text(if (row.isPinned) "Unpin" else "Pin to top") },
+                text        = { Text(stringResource(if (row.isPinned) R.string.unpin else R.string.pin_to_top)) },
                 leadingIcon = {
                     Icon(
                         if (row.isPinned) Icons.Default.PushPin else Icons.Default.PushPin,
@@ -622,17 +624,17 @@ private fun FileItem(
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text        = { Text("Rename") },
+                text        = { Text(stringResource(R.string.action_rename)) },
                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                 onClick     = { showMenu = false; onRename() },
             )
             DropdownMenuItem(
-                text        = { Text("Move to…") },
+                text        = { Text(stringResource(R.string.move_to)) },
                 leadingIcon = { Icon(Icons.Default.DriveFileMove, null) },
                 onClick     = { showMenu = false; onMove() },
             )
             DropdownMenuItem(
-                text        = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                text        = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Delete,
@@ -679,9 +681,9 @@ private fun InputDialog(
             TextButton(
                 onClick  = { if (value.isNotBlank()) onConfirm(value.trim()) },
                 enabled  = value.isNotBlank(),
-            ) { Text("OK") }
+            ) { Text(stringResource(R.string.action_ok)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -710,10 +712,10 @@ private fun ConfirmDeleteDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -786,7 +788,7 @@ private fun MovePickerDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -799,8 +801,8 @@ private fun EmptyTreePlaceholder(filterActive: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            if (filterActive) "No notes match this filter."
-            else "This vault is empty.\nTap + to create a note.",
+            if (filterActive) stringResource(R.string.empty_filter)
+            else stringResource(R.string.empty_vault),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )

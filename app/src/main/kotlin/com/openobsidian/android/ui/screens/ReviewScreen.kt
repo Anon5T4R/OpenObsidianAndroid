@@ -9,9 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.openobsidian.android.R
 import com.openobsidian.android.data.Srs
 import com.openobsidian.android.viewmodel.ReviewCard
 
@@ -41,13 +43,13 @@ fun ReviewScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (card != null) "$done done · $remaining to go" else "Review",
+                        if (card != null) stringResource(R.string.review_progress, done, remaining) else stringResource(R.string.review_title),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = "Close review")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close_review))
                     }
                 },
             )
@@ -68,7 +70,7 @@ fun ReviewScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Text(
-                        "The schedule could not be saved — this session is not being recorded.",
+                        stringResource(R.string.review_schedule_failed),
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer,
@@ -84,9 +86,9 @@ fun ReviewScreen(
                     ) {
                         Text(
                             when {
-                                done > 0 -> "Session finished"
-                                totalCards == 0 -> "No cards yet"
-                                else -> "Nothing due right now"
+                                done > 0 -> stringResource(R.string.review_finished)
+                                totalCards == 0 -> stringResource(R.string.review_no_cards)
+                                else -> stringResource(R.string.review_nothing_due)
                             },
                             style = MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center,
@@ -97,7 +99,7 @@ fun ReviewScreen(
                             // Cards are written by hand, so the empty state is
                             // the only place that can say how.
                             Text(
-                                "A card is a callout inside any note — it stays readable as ordinary Markdown:",
+                                stringResource(R.string.review_syntax_intro),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -108,32 +110,29 @@ fun ReviewScreen(
                                 shape = MaterialTheme.shapes.small,
                             ) {
                                 Text(
-                                    "> [!card]- Question\n" +
-                                        "> Answer\n\n" +
-                                        "> [!card] Title\n" +
-                                        "> a phrase with ==highlights==",
+                                    stringResource(R.string.review_syntax_example),
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                "Each ==highlight== becomes its own gap-fill card. Save the note and it shows up here.",
+                                stringResource(R.string.review_syntax_outro),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                             )
                         } else {
                             Text(
-                                if (done > 0) "$done card(s) reviewed."
-                                else "$totalCards card(s) in the vault. They come back on the day they are due.",
+                                if (done > 0) stringResource(R.string.review_reviewed, done)
+                                else stringResource(R.string.review_in_vault, totalCards),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                             )
                         }
                         Spacer(Modifier.height(24.dp))
-                        Button(onClick = onClose) { Text("Done") }
+                        Button(onClick = onClose) { Text(stringResource(R.string.action_done)) }
                     }
                 }
                 return@Column
@@ -169,7 +168,7 @@ fun ReviewScreen(
                 Button(
                     onClick = onReveal,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                ) { Text("Show answer") }
+                ) { Text(stringResource(R.string.review_show_answer)) }
             } else {
                 // The four SM-2 grades. "Again" first, on the left, because it
                 // is the one you reach for without thinking twice.
@@ -177,10 +176,10 @@ fun ReviewScreen(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    GradeButton("Again", Modifier.weight(1f)) { onGrade(Srs.Grade.AGAIN) }
-                    GradeButton("Hard", Modifier.weight(1f)) { onGrade(Srs.Grade.HARD) }
-                    GradeButton("Good", Modifier.weight(1f)) { onGrade(Srs.Grade.GOOD) }
-                    GradeButton("Easy", Modifier.weight(1f)) { onGrade(Srs.Grade.EASY) }
+                    GradeButton(stringResource(R.string.grade_again), Modifier.weight(1f)) { onGrade(Srs.Grade.AGAIN) }
+                    GradeButton(stringResource(R.string.grade_hard), Modifier.weight(1f)) { onGrade(Srs.Grade.HARD) }
+                    GradeButton(stringResource(R.string.grade_good), Modifier.weight(1f)) { onGrade(Srs.Grade.GOOD) }
+                    GradeButton(stringResource(R.string.grade_easy), Modifier.weight(1f)) { onGrade(Srs.Grade.EASY) }
                 }
             }
         }

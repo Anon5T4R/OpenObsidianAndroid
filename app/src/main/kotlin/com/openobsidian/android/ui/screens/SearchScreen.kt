@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openobsidian.android.R
 import com.openobsidian.android.data.Node
 import com.openobsidian.android.viewmodel.SearchResult
 
@@ -55,18 +57,18 @@ fun SearchScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Close search")
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_close_search))
             }
             OutlinedTextField(
                 value         = query,
                 onValueChange = onQueryChange,
-                placeholder   = { Text("Search notes…") },
+                placeholder   = { Text(stringResource(R.string.search_placeholder)) },
                 singleLine    = true,
                 leadingIcon   = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon  = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_clear))
                         }
                     }
                 },
@@ -112,7 +114,7 @@ fun SearchScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "Type to search across all notes.",
+                        stringResource(R.string.search_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
@@ -124,7 +126,7 @@ fun SearchScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No results for \"$query\"",
+                        stringResource(R.string.search_no_results, query),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )

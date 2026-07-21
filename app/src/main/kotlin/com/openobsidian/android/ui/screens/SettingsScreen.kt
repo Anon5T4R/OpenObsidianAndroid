@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openobsidian.android.R
 import com.openobsidian.android.data.AppSettings
 import com.openobsidian.android.data.AppTheme
 import com.openobsidian.android.data.PreviewFontSize
@@ -37,10 +39,10 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
             }
             Text(
-                "Settings",
+                stringResource(R.string.settings_title),
                 style    = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(start = 4.dp),
             )
@@ -55,7 +57,7 @@ fun SettingsScreen(
             item {
                 Spacer(Modifier.height(20.dp))
                 Text(
-                    "Theme",
+                    stringResource(R.string.settings_theme),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -79,7 +81,7 @@ fun SettingsScreen(
             item {
                 Spacer(Modifier.height(28.dp))
                 Text(
-                    "Preview font size",
+                    stringResource(R.string.settings_preview_font),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -106,7 +108,7 @@ fun SettingsScreen(
                     tonalElevation = 1.dp,
                 ) {
                     Text(
-                        "The quick brown fox jumps over the lazy dog.",
+                        stringResource(R.string.settings_font_sample),
                         style    = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = androidx.compose.ui.unit.TextUnit(
                                 settings.previewFontSize.sp,
@@ -122,7 +124,7 @@ fun SettingsScreen(
             item {
                 Spacer(Modifier.height(28.dp))
                 Text(
-                    "File sort order",
+                    stringResource(R.string.settings_sort_order),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )

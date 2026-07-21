@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ── Boas-vindas ─────────────────────────────────────────────── -->
+    <string name="welcome_tagline">Suas notas em Markdown, nativas e rápidas.</string>
+    <string name="open_vault">Abrir vault</string>
+    <string name="reopen_vault">Reabrir %1$s</string>
+    <string name="open_other_vault">Abrir outro vault</string>
+    <string name="recent_vaults">Vaults recentes</string>
+    <string name="forget_vault">Esquecer</string>
+    <string name="no_vaults_yet">Nenhum vault ainda. Abra uma pasta para começar.</string>
+
+    <!-- ── Ações comuns ────────────────────────────────────────────── -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_ok">OK</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_rename">Renomear</string>
+    <string name="action_retry">Tentar de novo</string>
+    <string name="action_done">Pronto</string>
+    <string name="action_clear">Limpar</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_forward">Avançar</string>
+
+    <!-- ── Tela do vault ───────────────────────────────────────────── -->
+    <string name="cd_open_menu">Abrir menu</string>
+    <string name="cd_expand_sidebar">Expandir barra lateral</string>
+    <string name="cd_search">Buscar</string>
+    <string name="cd_settings">Ajustes</string>
+    <string name="cd_more">Mais</string>
+    <string name="cd_review">Revisar flashcards</string>
+    <string name="menu_outline">Sumário</string>
+    <string name="menu_find_in_note">Buscar na nota</string>
+    <string name="menu_export_pdf">Exportar como PDF</string>
+    <string name="vault_read_error">Não consegui ler o vault</string>
+    <string name="pick_a_note">Escolha uma nota</string>
+    <string name="unsaved">Não salvo</string>
+
+    <!-- ── Árvore de arquivos ──────────────────────────────────────── -->
+    <string name="cd_switch_vault">Trocar de vault</string>
+    <string name="cd_daily_note">Nota do dia</string>
+    <string name="cd_refresh">Atualizar</string>
+    <string name="cd_new">Novo</string>
+    <string name="cd_collapse_sidebar">Recolher barra lateral</string>
+    <string name="filter_notes">Filtrar notas…</string>
+    <string name="new_note">Nova nota</string>
+    <string name="new_folder">Nova pasta</string>
+    <string name="new_from_template">Nova a partir de modelo</string>
+    <string name="new_note_here">Nova nota aqui</string>
+    <string name="new_folder_here">Nova pasta aqui</string>
+    <string name="move_to">Mover para…</string>
+    <string name="pin_to_top">Fixar no topo</string>
+    <string name="unpin">Desafixar</string>
+    <string name="section_pinned">Fixadas</string>
+    <string name="delete_note_q">Excluir a nota?</string>
+    <string name="delete_folder_q">Excluir a pasta?</string>
+    <string name="move_dialog_title">Mover \"%1$s\" para…</string>
+    <string name="new_note_from_template">Nova nota a partir de modelo</string>
+    <string name="new_note_from">Nova nota a partir de \"%1$s\"</string>
+    <string name="empty_vault">Este vault está vazio.\nToque em + para criar uma nota.</string>
+    <string name="empty_filter">Nenhuma nota corresponde a este filtro.</string>
+
+    <!-- ── Busca ───────────────────────────────────────────────────── -->
+    <string name="cd_close_search">Fechar a busca</string>
+    <string name="search_placeholder">Buscar nas notas…</string>
+    <string name="search_hint">Digite para buscar em todas as notas.</string>
+    <string name="search_no_results">Nenhum resultado para \"%1$s\"</string>
+
+    <!-- ── Ajustes ─────────────────────────────────────────────────── -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_preview_font">Tamanho da fonte do preview</string>
+    <string name="settings_font_sample">Um pangrama que exercita a fonte com acentuação.</string>
+    <string name="settings_sort_order">Ordenação dos arquivos</string>
+
+    <!-- ── Editor: buscar e substituir ─────────────────────────────── -->
+    <string name="find_placeholder">Buscar na nota…</string>
+    <string name="replace_placeholder">Substituir por…</string>
+    <string name="cd_prev_match">Ocorrência anterior</string>
+    <string name="cd_next_match">Próxima ocorrência</string>
+    <string name="cd_replace">Substituir</string>
+    <string name="cd_close_find">Fechar a barra de busca</string>
+    <string name="action_replace">Substituir</string>
+    <string name="action_replace_all">Todas</string>
+
+    <!-- ── Editor: menu de inserção ────────────────────────────────── -->
+    <string name="ins_heading1">Título 1</string>
+    <string name="ins_heading2">Título 2</string>
+    <string name="ins_heading3">Título 3</string>
+    <string name="ins_bold">Negrito</string>
+    <string name="ins_italic">Itálico</string>
+    <string name="ins_strikethrough">Tachado</string>
+    <string name="ins_highlight">Destaque</string>
+    <string name="ins_inline_code">Código em linha</string>
+    <string name="ins_code_block">Bloco de código</string>
+    <string name="ins_table">Tabela</string>
+    <string name="ins_bullet_list">Lista com marcadores</string>
+    <string name="ins_numbered_list">Lista numerada</string>
+    <string name="ins_checkbox">Caixa de seleção</string>
+    <string name="ins_wikilink">Wikilink</string>
+    <string name="ins_image_embed">Imagem (embutida)</string>
+    <string name="ins_image_gallery">Imagem da galeria</string>
+    <string name="ins_quote">Citação</string>
+    <string name="ins_divider">Divisor</string>
+
+    <!-- ── Flashcards ──────────────────────────────────────────────── -->
+    <string name="review_title">Revisão</string>
+    <string name="review_progress">%1$d feitos · faltam %2$d</string>
+    <string name="cd_close_review">Fechar a revisão</string>
+    <string name="review_show_answer">Mostrar resposta</string>
+    <string name="grade_again">De novo</string>
+    <string name="grade_hard">Difícil</string>
+    <string name="grade_good">Bom</string>
+    <string name="grade_easy">Fácil</string>
+    <string name="review_finished">Sessão concluída</string>
+    <string name="review_no_cards">Nenhum cartão ainda</string>
+    <string name="review_nothing_due">Nada para revisar agora</string>
+    <string name="review_reviewed">%1$d cartão(ões) revisado(s).</string>
+    <string name="review_in_vault">%1$d cartão(ões) no vault. Eles voltam no dia em que vencem.</string>
+    <string name="review_syntax_intro">Um cartão é um callout dentro de qualquer nota — continua legível como Markdown comum:</string>
+    <string name="review_syntax_example">&gt; [!card]- Pergunta\n&gt; Resposta\n\n&gt; [!card] Título\n&gt; uma frase com ==destaques==</string>
+    <string name="review_syntax_outro">Cada ==destaque== vira um cartão de lacuna. Salve a nota e ele aparece aqui.</string>
+    <string name="review_schedule_failed">Não consegui salvar o agendamento — esta sessão não está sendo registrada.</string>
+
+    <!-- ── Diagramas ───────────────────────────────────────────────── -->
+    <string name="diagram_title">Diagrama</string>
+    <string name="cd_close_diagram">Fechar o diagrama</string>
+    <string name="open_diagram">📊 Abrir diagrama</string>
+
+    <!-- ── Visualizadores ──────────────────────────────────────────── -->
+    <string name="notes_button">Notas</string>
+    <string name="open_in_app">Abrir em outro app</string>
+    <string name="convert_to_markdown">Converter para Markdown</string>
+    <string name="docx_no_preview">Documento do Word\nNão há visualização no Android.</string>
+    <string name="toc_no_headings">Esta nota não tem títulos.</string>
+    <string name="unknown_error">Erro desconhecido</string>
+
+    <!-- ── Mensagens ───────────────────────────────────────────────── -->
+    <string name="toast_save_failed">Não consegui salvar \"%1$s\" — o arquivo no disco ainda é a versão anterior</string>
+    <string name="toast_rename_failed">Não consegui renomear \"%1$s\"</string>
+    <string name="toast_links_updated">%1$d link(s) atualizado(s) em %2$d nota(s)</string>
+    <string name="toast_move_into_itself">Não dá para mover uma pasta para dentro dela mesma</string>
+    <string name="toast_name_exists">\"%1$s\" já existe lá</string>
+    <string name="toast_move_failed">Não consegui mover \"%1$s\"</string>
+</resources>

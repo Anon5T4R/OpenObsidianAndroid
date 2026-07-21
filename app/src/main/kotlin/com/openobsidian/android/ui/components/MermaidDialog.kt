@@ -8,11 +8,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.openobsidian.android.R
 import org.json.JSONObject
 
 /**
@@ -44,12 +46,12 @@ fun MermaidDialog(source: String, onClose: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        "Diagram",
+                        stringResource(R.string.diagram_title),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(start = 8.dp, top = 8.dp),
                     )
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = "Close diagram")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close_diagram))
                     }
                 }
                 MermaidWebView(

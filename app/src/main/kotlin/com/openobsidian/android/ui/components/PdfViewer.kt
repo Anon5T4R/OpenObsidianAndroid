@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.openobsidian.android.R
 import com.openobsidian.android.data.Node
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -115,7 +117,7 @@ fun PdfViewer(
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Notes", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.notes_button), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }

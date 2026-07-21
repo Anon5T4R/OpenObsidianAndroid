@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.openobsidian.android.R
 import com.openobsidian.android.data.Cards
 import com.openobsidian.android.data.DocxConverter
 import com.openobsidian.android.data.LinkRewrite
@@ -251,7 +252,7 @@ class VaultViewModel(
         return runCatching {
             SafFs.writeTextChecked(appContext, file.uri, content, parent, file.name)
         }.onFailure { e ->
-            val msg = "Could not save \"${file.displayName}\" — the file on disk is still the previous version"
+            val msg = appContext.getString(R.string.toast_save_failed, file.displayName)
             _state.update { it.copy(saveError = msg) }
             toast(msg)
             android.util.Log.w("OpenObsidian", "save failed for ${file.name}", e)
@@ -445,7 +446,7 @@ class VaultViewModel(
             }
             val renamed = runCatching { SafFs.rename(appContext, node.uri, safeName) }.getOrNull()
             if (renamed == null) {
-                toast("Couldn't rename \"${node.name}\"")
+                toast(appContext.getString(R.string.toast_rename_failed, node.name))
                 loadTree()
                 return@launch
             }
@@ -490,7 +491,7 @@ class VaultViewModel(
 
         if (notes > 0) {
             _state.update { it.copy(contentCache = updatedCache) }
-            toast("$links link(s) updated in $notes note(s)")
+            toast(appContext.getString(R.string.toast_links_updated, links, notes))
         }
     }
 
@@ -511,13 +512,13 @@ class VaultViewModel(
 
             // Can't move a folder into itself or a descendant.
             if (node is Node.Dir && isSelfOrDescendant(node, targetDir)) {
-                toast("Can't move a folder into itself")
+                toast(appContext.getString(R.string.toast_move_into_itself))
                 return@launch
             }
 
             // Name collision in the destination.
             if (SafFs.hasChildNamed(appContext, targetDir, node.name)) {
-                toast("\"${node.name}\" already exists there")
+                toast(appContext.getString(R.string.toast_name_exists, node.name))
                 return@launch
             }
 
@@ -526,7 +527,7 @@ class VaultViewModel(
             }.getOrNull()
 
             if (newUri == null) {
-                toast("Couldn't move \"${node.name}\"")
+                toast(appContext.getString(R.string.toast_move_failed, node.name))
                 return@launch
             }
 

@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.openobsidian.android.R
 import com.openobsidian.android.data.AppSettings
 import com.openobsidian.android.data.LocalAppSettings
 import com.openobsidian.android.data.Node
@@ -160,7 +162,7 @@ fun VaultScreen(
                             )
                             if (state.isDirty) {
                                 Text(
-                                    "Unsaved",
+                                    stringResource(R.string.unsaved),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
@@ -171,11 +173,11 @@ fun VaultScreen(
                         when {
                             // Retrato/telas estreitas: hambúrguer abre o drawer modal.
                             !isTablet -> IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Open menu")
+                                Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.cd_open_menu))
                             }
                             // Tela larga com a barra recolhida: hambúrguer re-expande.
                             sidebarCollapsed -> IconButton(onClick = { sidebarCollapsed = false }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Expand sidebar")
+                                Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.cd_expand_sidebar))
                             }
                             // Tela larga com a barra visível: sem ícone aqui (a própria
                             // barra tem o botão de recolher no cabeçalho).
@@ -187,10 +189,10 @@ fun VaultScreen(
                         }
                         if (state.tree != null) {
                             IconButton(onClick = { vm.navBack() },    enabled = state.canNavBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                             }
                             IconButton(onClick = { vm.navForward() }, enabled = state.canNavForward) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(R.string.action_forward))
                             }
                             // Always here once a vault is open. Hiding it until
                             // the vault had cards made the whole feature
@@ -200,29 +202,29 @@ fun VaultScreen(
                                 BadgedBox(badge = {
                                     if (state.srsStats.due > 0) Badge { Text("${state.srsStats.due}") }
                                 }) {
-                                    Icon(Icons.Default.Style, contentDescription = "Review flashcards")
+                                    Icon(Icons.Default.Style, contentDescription = stringResource(R.string.cd_review))
                                 }
                             }
                             IconButton(onClick = { vm.openSearch() }) {
-                                Icon(Icons.Default.Search, contentDescription = "Search")
+                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search))
                             }
                         }
                         IconButton(onClick = onOpenSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings))
                         }
                         // Overflow menu for note-specific actions (Export PDF).
                         if (state.activeFile?.isText == true) {
                             var showNoteMenu by remember { mutableStateOf(false) }
                             Box {
                                 IconButton(onClick = { showNoteMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+                                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more))
                                 }
                                 DropdownMenu(
                                     expanded         = showNoteMenu,
                                     onDismissRequest = { showNoteMenu = false },
                                 ) {
                                     DropdownMenuItem(
-                                        text        = { Text("Outline") },
+                                        text        = { Text(stringResource(R.string.menu_outline)) },
                                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.FormatListBulleted, contentDescription = null) },
                                         onClick     = {
                                             showNoteMenu = false
@@ -230,7 +232,7 @@ fun VaultScreen(
                                         },
                                     )
                                     DropdownMenuItem(
-                                        text        = { Text("Find in note") },
+                                        text        = { Text(stringResource(R.string.menu_find_in_note)) },
                                         leadingIcon = { Icon(Icons.Default.FindInPage, contentDescription = null) },
                                         onClick     = {
                                             showNoteMenu = false
@@ -240,7 +242,7 @@ fun VaultScreen(
                                         },
                                     )
                                     DropdownMenuItem(
-                                        text        = { Text("Export as PDF") },
+                                        text        = { Text(stringResource(R.string.menu_export_pdf)) },
                                         leadingIcon = { Icon(Icons.Default.Print, contentDescription = null) },
                                         onClick     = {
                                             showNoteMenu = false
@@ -672,12 +674,12 @@ private fun ErrorBox(message: String, onRetry: () -> Unit) {
             Icon(Icons.Default.ErrorOutline, null, Modifier.size(40.dp),
                 tint = MaterialTheme.colorScheme.error)
             Spacer(Modifier.height(12.dp))
-            Text("Couldn't read the vault", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.vault_read_error), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(message, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             Spacer(Modifier.height(16.dp))
-            FilledTonalButton(onClick = onRetry) { Text("Retry") }
+            FilledTonalButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
         }
     }
 }
@@ -689,7 +691,7 @@ private fun EmptyVaultHero(onOpenMenu: () -> Unit) {
             Text("⬡", style = MaterialTheme.typography.displayLarge,
                 color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
-            Text("Pick a note", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.pick_a_note), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(4.dp))
             Text(
                 "Open the menu to browse your vault.\nLong-press a file or folder to rename or delete.",
@@ -700,7 +702,7 @@ private fun EmptyVaultHero(onOpenMenu: () -> Unit) {
             FilledTonalButton(onClick = onOpenMenu) {
                 Icon(Icons.Default.Menu, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Open menu")
+                Text(stringResource(R.string.cd_open_menu))
             }
         }
     }

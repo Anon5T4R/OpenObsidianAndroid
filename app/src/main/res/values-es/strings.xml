@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ── Bienvenida ──────────────────────────────────────────────── -->
+    <string name="welcome_tagline">Tus notas en Markdown, nativas y rápidas.</string>
+    <string name="open_vault">Abrir vault</string>
+    <string name="reopen_vault">Reabrir %1$s</string>
+    <string name="open_other_vault">Abrir otro vault</string>
+    <string name="recent_vaults">Vaults recientes</string>
+    <string name="forget_vault">Olvidar</string>
+    <string name="no_vaults_yet">Ningún vault todavía. Abre una carpeta para empezar.</string>
+
+    <!-- ── Acciones comunes ────────────────────────────────────────── -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_ok">OK</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_rename">Renombrar</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="action_done">Listo</string>
+    <string name="action_clear">Limpiar</string>
+    <string name="action_back">Atrás</string>
+    <string name="action_forward">Adelante</string>
+
+    <!-- ── Pantalla del vault ──────────────────────────────────────── -->
+    <string name="cd_open_menu">Abrir menú</string>
+    <string name="cd_expand_sidebar">Expandir barra lateral</string>
+    <string name="cd_search">Buscar</string>
+    <string name="cd_settings">Ajustes</string>
+    <string name="cd_more">Más</string>
+    <string name="cd_review">Repasar tarjetas</string>
+    <string name="menu_outline">Índice</string>
+    <string name="menu_find_in_note">Buscar en la nota</string>
+    <string name="menu_export_pdf">Exportar como PDF</string>
+    <string name="vault_read_error">No pude leer el vault</string>
+    <string name="pick_a_note">Elige una nota</string>
+    <string name="unsaved">Sin guardar</string>
+
+    <!-- ── Árbol de archivos ───────────────────────────────────────── -->
+    <string name="cd_switch_vault">Cambiar de vault</string>
+    <string name="cd_daily_note">Nota de hoy</string>
+    <string name="cd_refresh">Actualizar</string>
+    <string name="cd_new">Nuevo</string>
+    <string name="cd_collapse_sidebar">Contraer barra lateral</string>
+    <string name="filter_notes">Filtrar notas…</string>
+    <string name="new_note">Nueva nota</string>
+    <string name="new_folder">Nueva carpeta</string>
+    <string name="new_from_template">Nueva desde plantilla</string>
+    <string name="new_note_here">Nueva nota aquí</string>
+    <string name="new_folder_here">Nueva carpeta aquí</string>
+    <string name="move_to">Mover a…</string>
+    <string name="pin_to_top">Fijar arriba</string>
+    <string name="unpin">Quitar fijado</string>
+    <string name="section_pinned">Fijadas</string>
+    <string name="delete_note_q">¿Eliminar la nota?</string>
+    <string name="delete_folder_q">¿Eliminar la carpeta?</string>
+    <string name="move_dialog_title">Mover \"%1$s\" a…</string>
+    <string name="new_note_from_template">Nueva nota desde plantilla</string>
+    <string name="new_note_from">Nueva nota desde \"%1$s\"</string>
+    <string name="empty_vault">Este vault está vacío.\nToca + para crear una nota.</string>
+    <string name="empty_filter">Ninguna nota coincide con este filtro.</string>
+
+    <!-- ── Búsqueda ────────────────────────────────────────────────── -->
+    <string name="cd_close_search">Cerrar la búsqueda</string>
+    <string name="search_placeholder">Buscar en las notas…</string>
+    <string name="search_hint">Escribe para buscar en todas las notas.</string>
+    <string name="search_no_results">Sin resultados para \"%1$s\"</string>
+
+    <!-- ── Ajustes ─────────────────────────────────────────────────── -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_preview_font">Tamaño de fuente de la vista previa</string>
+    <string name="settings_font_sample">Un pangrama que ejercita la fuente con acentuación.</string>
+    <string name="settings_sort_order">Orden de los archivos</string>
+
+    <!-- ── Editor: buscar y reemplazar ─────────────────────────────── -->
+    <string name="find_placeholder">Buscar en la nota…</string>
+    <string name="replace_placeholder">Reemplazar por…</string>
+    <string name="cd_prev_match">Coincidencia anterior</string>
+    <string name="cd_next_match">Coincidencia siguiente</string>
+    <string name="cd_replace">Reemplazar</string>
+    <string name="cd_close_find">Cerrar la barra de búsqueda</string>
+    <string name="action_replace">Reemplazar</string>
+    <string name="action_replace_all">Todas</string>
+
+    <!-- ── Editor: menú de inserción ───────────────────────────────── -->
+    <string name="ins_heading1">Título 1</string>
+    <string name="ins_heading2">Título 2</string>
+    <string name="ins_heading3">Título 3</string>
+    <string name="ins_bold">Negrita</string>
+    <string name="ins_italic">Cursiva</string>
+    <string name="ins_strikethrough">Tachado</string>
+    <string name="ins_highlight">Resaltado</string>
+    <string name="ins_inline_code">Código en línea</string>
+    <string name="ins_code_block">Bloque de código</string>
+    <string name="ins_table">Tabla</string>
+    <string name="ins_bullet_list">Lista con viñetas</string>
+    <string name="ins_numbered_list">Lista numerada</string>
+    <string name="ins_checkbox">Casilla</string>
+    <string name="ins_wikilink">Wikilink</string>
+    <string name="ins_image_embed">Imagen (incrustada)</string>
+    <string name="ins_image_gallery">Imagen de la galería</string>
+    <string name="ins_quote">Cita</string>
+    <string name="ins_divider">Separador</string>
+
+    <!-- ── Tarjetas ────────────────────────────────────────────────── -->
+    <string name="review_title">Repaso</string>
+    <string name="review_progress">%1$d hechas · faltan %2$d</string>
+    <string name="cd_close_review">Cerrar el repaso</string>
+    <string name="review_show_answer">Mostrar respuesta</string>
+    <string name="grade_again">Otra vez</string>
+    <string name="grade_hard">Difícil</string>
+    <string name="grade_good">Bien</string>
+    <string name="grade_easy">Fácil</string>
+    <string name="review_finished">Sesión terminada</string>
+    <string name="review_no_cards">Todavía no hay tarjetas</string>
+    <string name="review_nothing_due">Nada para repasar ahora</string>
+    <string name="review_reviewed">%1$d tarjeta(s) repasada(s).</string>
+    <string name="review_in_vault">%1$d tarjeta(s) en el vault. Vuelven el día en que vencen.</string>
+    <string name="review_syntax_intro">Una tarjeta es un callout dentro de cualquier nota — sigue siendo Markdown legible:</string>
+    <string name="review_syntax_example">&gt; [!card]- Pregunta\n&gt; Respuesta\n\n&gt; [!card] Título\n&gt; una frase con ==resaltados==</string>
+    <string name="review_syntax_outro">Cada ==resaltado== se vuelve su propia tarjeta con hueco. Guarda la nota y aparece aquí.</string>
+    <string name="review_schedule_failed">No se pudo guardar la programación — esta sesión no se está registrando.</string>
+
+    <!-- ── Diagramas ───────────────────────────────────────────────── -->
+    <string name="diagram_title">Diagrama</string>
+    <string name="cd_close_diagram">Cerrar el diagrama</string>
+    <string name="open_diagram">📊 Abrir diagrama</string>
+
+    <!-- ── Visores ─────────────────────────────────────────────────── -->
+    <string name="notes_button">Notas</string>
+    <string name="open_in_app">Abrir en otra app</string>
+    <string name="convert_to_markdown">Convertir a Markdown</string>
+    <string name="docx_no_preview">Documento de Word\nNo hay vista previa en Android.</string>
+    <string name="toc_no_headings">Esta nota no tiene títulos.</string>
+    <string name="unknown_error">Error desconocido</string>
+
+    <!-- ── Mensajes ────────────────────────────────────────────────── -->
+    <string name="toast_save_failed">No pude guardar \"%1$s\" — el archivo en el disco sigue siendo la versión anterior</string>
+    <string name="toast_rename_failed">No pude renombrar \"%1$s\"</string>
+    <string name="toast_links_updated">%1$d enlace(s) actualizado(s) en %2$d nota(s)</string>
+    <string name="toast_move_into_itself">No se puede mover una carpeta dentro de sí misma</string>
+    <string name="toast_name_exists">\"%1$s\" ya existe ahí</string>
+    <string name="toast_move_failed">No pude mover \"%1$s\"</string>
+</resources>

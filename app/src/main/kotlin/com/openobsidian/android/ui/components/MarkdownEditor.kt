@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openobsidian.android.R
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -384,7 +386,7 @@ private fun FindReplaceBar(
                 OutlinedTextField(
                     value         = query,
                     onValueChange = onQueryChange,
-                    placeholder   = { Text("Find in note…") },
+                    placeholder   = { Text(stringResource(R.string.find_placeholder)) },
                     singleLine    = true,
                     textStyle     = MaterialTheme.typography.bodyMedium,
                     modifier      = Modifier.weight(1f),
@@ -396,22 +398,22 @@ private fun FindReplaceBar(
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
                 IconButton(onClick = onPrev, enabled = matchCount > 0, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Previous match", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.cd_prev_match), modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = onNext, enabled = matchCount > 0, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next match", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.cd_next_match), modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = onToggleReplace, modifier = Modifier.size(36.dp)) {
                     Icon(
                         Icons.Default.FindReplace,
-                        contentDescription = "Replace",
+                        contentDescription = stringResource(R.string.cd_replace),
                         modifier = Modifier.size(20.dp),
                         tint = if (showReplace) MaterialTheme.colorScheme.primary
                                else LocalContentColor.current,
                     )
                 }
                 IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close find bar", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close_find), modifier = Modifier.size(20.dp))
                 }
             }
             AnimatedVisibility(visible = showReplace) {
@@ -422,14 +424,14 @@ private fun FindReplaceBar(
                     OutlinedTextField(
                         value         = replaceValue,
                         onValueChange = onReplaceChange,
-                        placeholder   = { Text("Replace with…") },
+                        placeholder   = { Text(stringResource(R.string.replace_placeholder)) },
                         singleLine    = true,
                         textStyle     = MaterialTheme.typography.bodyMedium,
                         modifier      = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(6.dp))
-                    TextButton(onClick = onReplaceOne, enabled = matchCount > 0) { Text("Replace") }
-                    TextButton(onClick = onReplaceAll, enabled = matchCount > 0) { Text("All") }
+                    TextButton(onClick = onReplaceOne, enabled = matchCount > 0) { Text(stringResource(R.string.action_replace)) }
+                    TextButton(onClick = onReplaceAll, enabled = matchCount > 0) { Text(stringResource(R.string.action_replace_all)) }
                 }
             }
         }
