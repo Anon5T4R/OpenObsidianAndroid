@@ -158,4 +158,14 @@
     <string name="backup_running">Backing up…</string>
     <string name="backup_done">%1$d files backed up</string>
     <string name="backup_done_skipped">%1$d files backed up · %2$d could not be read</string>
-    <string name="backup_failed">Backup failed</string></resources>
+    <string name="backup_failed">Backup failed</string>    <string name="stats_title">Review statistics</string>
+    <string name="menu_stats">Review statistics</string>
+    <string name="stats_total">Cards</string>
+    <string name="stats_due">Due</string>
+    <string name="stats_fresh">New</string>
+    <string name="stats_retention">Retention</string>
+    <string name="stats_ease">Avg. ease</string>
+    <string name="stats_suspended">Suspended</string>
+    <string name="stats_forecast">Next 14 days</string>
+    <string name="stats_top_notes">Notes with the most cards</string>    <string name="epub_unreadable">This EPUB could not be read.</string>
+</resources>

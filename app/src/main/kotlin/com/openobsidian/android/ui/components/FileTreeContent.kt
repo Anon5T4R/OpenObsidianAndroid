@@ -176,6 +176,8 @@ fun FileTreeContent(
     onDiagnostics: () -> Unit = {},
     /** Abre o seletor de destino do backup .zip */
     onBackup: () -> Unit = {},
+    /** Abre as estatísticas de revisão */
+    onStats: () -> Unit = {},
     templates: List<Node.File> = emptyList(),
     onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
     /** Quando não-nulo, mostra um botão de recolher a barra (tela larga/paisagem). */
@@ -290,6 +292,11 @@ fun FileTreeContent(
                     expanded         = showVaultMenu,
                     onDismissRequest = { showVaultMenu = false },
                 ) {
+                    DropdownMenuItem(
+                        text        = { Text(stringResource(R.string.menu_stats)) },
+                        leadingIcon = { Icon(Icons.Default.QueryStats, null) },
+                        onClick     = { showVaultMenu = false; onStats() },
+                    )
                     DropdownMenuItem(
                         text        = { Text(stringResource(R.string.menu_diagnostics)) },
                         leadingIcon = { Icon(Icons.Default.HealthAndSafety, null) },

@@ -127,7 +127,7 @@ object SafFs {
         val lower = name.lowercase()
         return lower.endsWith(".md") || lower.endsWith(".markdown")
             || lower.endsWith(".pdf") || lower.endsWith(".docx")
-            || lower.endsWith(".txt")
+            || lower.endsWith(".epub") || lower.endsWith(".txt")
     }
 
     private val IMAGE_EXTS = listOf(".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg")
@@ -405,7 +405,8 @@ sealed class Node {
     ) : Node() {
         val isPdf:  Boolean get() = name.endsWith(".pdf",  ignoreCase = true)
         val isDocx: Boolean get() = name.endsWith(".docx", ignoreCase = true)
-        val isText: Boolean get() = !isPdf && !isDocx
+        val isEpub: Boolean get() = name.endsWith(".epub", ignoreCase = true)
+        val isText: Boolean get() = !isPdf && !isDocx && !isEpub
         /** Display name without the .md extension. */
         val displayName: String get() = name.removeSuffix(".md").removeSuffix(".markdown")
     }

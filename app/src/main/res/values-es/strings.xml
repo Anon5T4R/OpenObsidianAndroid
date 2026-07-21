@@ -151,4 +151,14 @@
     <string name="backup_running">Haciendo la copia…</string>
     <string name="backup_done">%1$d archivos en la copia</string>
     <string name="backup_done_skipped">%1$d archivos en la copia · %2$d no se pudieron leer</string>
-    <string name="backup_failed">La copia falló</string></resources>
+    <string name="backup_failed">La copia falló</string>    <string name="stats_title">Estadísticas de repaso</string>
+    <string name="menu_stats">Estadísticas de repaso</string>
+    <string name="stats_total">Tarjetas</string>
+    <string name="stats_due">Vencidas</string>
+    <string name="stats_fresh">Nuevas</string>
+    <string name="stats_retention">Retención</string>
+    <string name="stats_ease">Facilidad med.</string>
+    <string name="stats_suspended">Suspendidas</string>
+    <string name="stats_forecast">Próximos 14 días</string>
+    <string name="stats_top_notes">Notas con más tarjetas</string>    <string name="epub_unreadable">No pude leer este EPUB.</string>
+</resources>

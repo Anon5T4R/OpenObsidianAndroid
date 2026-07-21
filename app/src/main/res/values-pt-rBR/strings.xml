@@ -151,4 +151,14 @@
     <string name="backup_running">Fazendo backup…</string>
     <string name="backup_done">%1$d arquivos no backup</string>
     <string name="backup_done_skipped">%1$d arquivos no backup · %2$d não puderam ser lidos</string>
-    <string name="backup_failed">O backup falhou</string></resources>
+    <string name="backup_failed">O backup falhou</string>    <string name="stats_title">Estatísticas de revisão</string>
+    <string name="menu_stats">Estatísticas de revisão</string>
+    <string name="stats_total">Cartões</string>
+    <string name="stats_due">Vencendo</string>
+    <string name="stats_fresh">Novos</string>
+    <string name="stats_retention">Retenção</string>
+    <string name="stats_ease">Facilidade méd.</string>
+    <string name="stats_suspended">Suspensos</string>
+    <string name="stats_forecast">Próximos 14 dias</string>
+    <string name="stats_top_notes">Notas com mais cartões</string>    <string name="epub_unreadable">Não consegui ler este EPUB.</string>
+</resources>

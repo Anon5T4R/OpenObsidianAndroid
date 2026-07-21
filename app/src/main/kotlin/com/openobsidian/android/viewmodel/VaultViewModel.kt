@@ -18,6 +18,7 @@ import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.NoteQuery
 import com.openobsidian.android.data.SafFs
 import com.openobsidian.android.data.Srs
+import com.openobsidian.android.data.SrsReport
 import com.openobsidian.android.data.SrsStore
 import com.openobsidian.android.data.Tree
 import com.openobsidian.android.data.VaultBackup
@@ -888,6 +889,12 @@ class VaultViewModel(
 
     fun closeReview() = _state.update { it.copy(reviewOpen = false, reviewQueue = emptyList()) }
 
+    fun openStats() = _state.update {
+        it.copy(statsOpen = true, srsReport = SrsReport.of(srsCards))
+    }
+
+    fun closeStats() = _state.update { it.copy(statsOpen = false) }
+
     companion object {
         fun factory(appContext: Context, vaultUri: Uri) =
             object : ViewModelProvider.Factory {
@@ -1031,6 +1038,8 @@ data class VaultUiState(
     val reviewRevealed: Boolean             = false,
     val reviewDone: Int                     = 0,
     val srsStats: Srs.Stats                 = Srs.Stats(0, 0, 0, 0),
+    val statsOpen: Boolean                  = false,
+    val srsReport: SrsReport.Report          = SrsReport.Report(0, 0, 0, 0, 0, 0.0, 0.0, emptyList(), emptyList()),
     /** The schedule could not be written; the session is not being recorded */
     val reviewError: Boolean                = false,
 ) {

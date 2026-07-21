@@ -37,6 +37,7 @@ import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.Srs
 import com.openobsidian.android.data.VaultRepository
 import com.openobsidian.android.ui.components.DocxViewer
+import com.openobsidian.android.ui.components.EpubViewer
 import com.openobsidian.android.ui.components.FileTreeContent
 import com.openobsidian.android.ui.components.MarkdownEditor
 import com.openobsidian.android.ui.components.MarkdownPreview
@@ -119,6 +120,12 @@ fun VaultScreen(
         return
     }
 
+    // ── Review statistics overlay ─────────────────────────────────────────
+    if (state.statsOpen) {
+        StatsScreen(report = state.srsReport, onClose = { vm.closeStats() })
+        return
+    }
+
     // ── Vault diagnostics overlay ─────────────────────────────────────────
     if (state.diagnosticsOpen) {
         DiagnosticsScreen(
@@ -162,6 +169,7 @@ fun VaultScreen(
             onReview       = { vm.startReview() },
             dueCards       = state.srsStats.due,
             onDiagnostics  = { vm.openDiagnostics() },
+            onStats        = { vm.openStats() },
             onBackup       = { backupPicker.launch(vm.backupFileName()) },
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
@@ -541,6 +549,14 @@ private fun NoteArea(
             onOpenCompanionNote = onOpenCompanionNote,
             onConvertToMd       = onConvertDocx,
             modifier            = Modifier.fillMaxSize(),
+        )
+        return
+    }
+    if (file.isEpub) {
+        EpubViewer(
+            fileUri     = file.uri,
+            onOpenNotes = onOpenCompanionNote,
+            modifier    = Modifier.fillMaxSize(),
         )
         return
     }
