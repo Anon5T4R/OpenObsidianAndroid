@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Bundles de terceiros saem exatamente como entraram. O mermaid.min.js é
+# minificado e pode conter template literals onde a quebra de linha faz parte
+# do valor — normalizar CRLF/LF ali arriscaria alterar o comportamento de um
+# arquivo que ninguém revisa linha a linha.
+app/src/main/assets/*.js -text
