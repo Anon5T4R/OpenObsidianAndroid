@@ -147,6 +147,8 @@ private sealed class PendingDialog {
 // Public composable
 // ─────────────────────────────────────────────────────────────────────────────
 
+// BadgedBox (contador de cartões) ainda é experimental no Material 3
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileTreeContent(
     tree: Tree?,
@@ -164,6 +166,10 @@ fun FileTreeContent(
     onMoveNode: (node: Node, targetDir: Uri) -> Unit = { _, _ -> },
     onTogglePin: (Node.File) -> Unit = {},
     onDailyNote: () -> Unit = {},
+    /** Opens a flashcard session; also lives in the top bar, which gets crowded on a phone */
+    onReview: () -> Unit = {},
+    /** Cards due today, shown as a badge — 0 hides it */
+    dueCards: Int = 0,
     templates: List<Node.File> = emptyList(),
     onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
     /** Quando não-nulo, mostra um botão de recolher a barra (tela larga/paisagem). */
@@ -210,6 +216,13 @@ fun FileTreeContent(
             // ── Daily note ────────────────────────────────────────────────
             IconButton(onClick = onDailyNote, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Default.CalendarToday, contentDescription = "Today's note", modifier = Modifier.size(20.dp))
+            }
+
+            // ── Flashcards ────────────────────────────────────────────────
+            IconButton(onClick = onReview, modifier = Modifier.size(36.dp)) {
+                BadgedBox(badge = { if (dueCards > 0) Badge { Text("$dueCards") } }) {
+                    Icon(Icons.Default.Style, contentDescription = "Review flashcards", modifier = Modifier.size(20.dp))
+                }
             }
 
             // ── Refresh ───────────────────────────────────────────────────

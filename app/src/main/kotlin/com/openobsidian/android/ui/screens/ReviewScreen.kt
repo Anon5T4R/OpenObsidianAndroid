@@ -29,6 +29,8 @@ fun ReviewScreen(
     revealed: Boolean,
     done: Int,
     remaining: Int,
+    /** Cards in the whole vault — zero means the syntax has to be explained */
+    totalCards: Int,
     scheduleFailed: Boolean,
     onReveal: () -> Unit,
     onGrade: (Srs.Grade) -> Unit,
@@ -76,20 +78,60 @@ fun ReviewScreen(
 
             if (card == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    ) {
                         Text(
-                            if (done > 0) "Session finished" else "Nothing due right now",
+                            when {
+                                done > 0 -> "Session finished"
+                                totalCards == 0 -> "No cards yet"
+                                else -> "Nothing due right now"
+                            },
                             style = MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            if (done > 0) "$done card(s) reviewed."
-                            else "Cards show up here on the day they are due.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
+                        if (totalCards == 0 && done == 0) {
+                            // A button that opens onto nothing teaches nothing.
+                            // Cards are written by hand, so the empty state is
+                            // the only place that can say how.
+                            Text(
+                                "A card is a callout inside any note — it stays readable as ordinary Markdown:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.small,
+                            ) {
+                                Text(
+                                    "> [!card]- Question\n" +
+                                        "> Answer\n\n" +
+                                        "> [!card] Title\n" +
+                                        "> a phrase with ==highlights==",
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Each ==highlight== becomes its own gap-fill card. Save the note and it shows up here.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        } else {
+                            Text(
+                                if (done > 0) "$done card(s) reviewed."
+                                else "$totalCards card(s) in the vault. They come back on the day they are due.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                         Spacer(Modifier.height(24.dp))
                         Button(onClick = onClose) { Text("Done") }
                     }

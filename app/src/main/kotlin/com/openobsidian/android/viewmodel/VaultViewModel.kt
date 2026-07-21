@@ -235,7 +235,12 @@ class VaultViewModel(
             // The dirty mark used to be cleared no matter what, so a failed save
             // looked exactly like a successful one — the app claimed to have
             // saved. It only comes off when the bytes actually landed.
-            if (ok) _state.update { it.copy(isDirty = false, saveError = null) }
+            if (ok) {
+                _state.update { it.copy(isDirty = false, saveError = null) }
+                // The card you just wrote counts from now, not from the next
+                // time the whole vault happens to be re-indexed
+                syncCards()
+            }
         }
     }
 
@@ -612,7 +617,11 @@ class VaultViewModel(
         val uncached = tree.allMarkdownFiles.filter {
             !s.contentCache.containsKey(it.uri.toString())
         }
-        if (uncached.isEmpty()) return
+        // Sync the cards even when there is nothing new to read: writing a card
+        // into an already-cached note does not change the index, but it does
+        // change the cards — and that is how a card just written never showed
+        // up in the counter, leaving the review button hidden for good.
+        if (uncached.isEmpty()) { syncCards(); return }
 
         _state.update { it.copy(indexing = true) }
         viewModelScope.launch {

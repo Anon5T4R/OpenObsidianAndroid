@@ -99,6 +99,7 @@ fun VaultScreen(
             revealed       = state.reviewRevealed,
             done           = state.reviewDone,
             remaining      = (state.reviewQueue.size - state.reviewIndex).coerceAtLeast(0),
+            totalCards     = state.srsStats.total,
             scheduleFailed = state.reviewError,
             onReveal       = { vm.revealAnswer() },
             onGrade        = { grade -> vm.gradeCurrent(grade) },
@@ -136,6 +137,8 @@ fun VaultScreen(
             onMoveNode     = { node, target -> vm.moveNode(node, target) },
             onTogglePin    = { vm.togglePin(it) },
             onDailyNote    = { vm.openDailyNote() },
+            onReview       = { vm.startReview() },
+            dueCards       = state.srsStats.due,
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
             // Botão de recolher só na barra fixa (tela larga); no modal é null.
@@ -189,15 +192,15 @@ fun VaultScreen(
                             IconButton(onClick = { vm.navForward() }, enabled = state.canNavForward) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
                             }
-                            // Only shown once the vault actually has cards —
-                            // an icon that never does anything is noise
-                            if (state.srsStats.total > 0) {
-                                IconButton(onClick = { vm.startReview() }) {
-                                    BadgedBox(badge = {
-                                        if (state.srsStats.due > 0) Badge { Text("${state.srsStats.due}") }
-                                    }) {
-                                        Icon(Icons.Default.Style, contentDescription = "Review flashcards")
-                                    }
+                            // Always here once a vault is open. Hiding it until
+                            // the vault had cards made the whole feature
+                            // undiscoverable: there was no way to find out it
+                            // existed, and nothing to tell you how to write one.
+                            IconButton(onClick = { vm.startReview() }) {
+                                BadgedBox(badge = {
+                                    if (state.srsStats.due > 0) Badge { Text("${state.srsStats.due}") }
+                                }) {
+                                    Icon(Icons.Default.Style, contentDescription = "Review flashcards")
                                 }
                             }
                             IconButton(onClick = { vm.openSearch() }) {
