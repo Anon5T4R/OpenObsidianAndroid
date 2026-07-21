@@ -60,6 +60,8 @@ fun MarkdownPreview(
     onWikilinkClick: (String) -> Unit = {},
     resolveImage: ((String) -> Uri?)? = null,
     onToggleCheckbox: ((String) -> Unit)? = null,
+    /** Roda um bloco ```query e devolve os nomes das notas + linhas ilegíveis */
+    runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
     scrollConnection: PreviewScrollConnection? = null,
 ) {
     val context   = LocalContext.current
@@ -71,7 +73,9 @@ fun MarkdownPreview(
     val imageResolverRef = remember { mutableStateOf(resolveImage) }
     val contentRef       = remember { mutableStateOf(content) }
     val toggleRef        = remember { mutableStateOf(onToggleCheckbox) }
+    val queryRef         = remember { mutableStateOf(runQuery) }
     SideEffect {
+        queryRef.value         = runQuery
         callbackRef.value      = onWikilinkClick
         imageResolverRef.value = resolveImage
         contentRef.value       = content
@@ -243,7 +247,7 @@ fun MarkdownPreview(
             val tv = scrollView.getChildAt(0) as TextView
             tv.setTextColor(textColor)
             tv.textSize = fontSize
-            markwon.setMarkdown(tv, preprocessMarkdown(content, imageResolverRef.value))
+            markwon.setMarkdown(tv, preprocessMarkdown(content, imageResolverRef.value, queryRef.value))
 
             // Registra o handler de "rolar até o heading" usado pelo sumário.
             // Procura a occurrence-ésima linha renderizada idêntica ao texto do
@@ -320,10 +324,37 @@ private fun linkifyMermaid(content: String): String =
         "\n[📊 Open diagram](mermaid:$encoded)\n"
     }
 
+// Um bloco ```query, com a especificação dentro.
+private val QUERY_FENCE = Regex(
+    "(?m)^[ \\t]*```[ \\t]*query[ \\t]*\\r?\\n([\\s\\S]*?)^[ \\t]*```[ \\t]*$",
+)
+
+/**
+ * Roda cada bloco ```query e o substitui pela lista de notas encontradas.
+ *
+ * Roda antes do [mapOutsideCodeFences] porque um bloco query *é* uma cerca —
+ * a mesma razão do mermaid. Linha que a consulta não entendeu aparece acima da
+ * lista: uma consulta que erra em silêncio devolve uma lista que parece certa.
+ */
+private fun runQueryBlocks(
+    content: String,
+    runQuery: ((String) -> Pair<List<String>, List<String>>)?,
+): String {
+    if (runQuery == null) return content
+    return QUERY_FENCE.replace(content) { m ->
+        val (names, unknown) = runQuery(m.groupValues[1])
+        val warn = if (unknown.isEmpty()) "" else "> ⚠️ " + unknown.joinToString(" · ") + "\n\n"
+        val body = if (names.isEmpty()) "_—_\n"
+        else names.joinToString("\n") { "- [[$it]]" } + "\n"
+        "\n$warn$body"
+    }
+}
+
 private fun preprocessMarkdown(
     content: String,
     resolveImage: ((String) -> Uri?)? = null,
-): String = mapOutsideCodeFences(linkifyMermaid(content)) { segment ->
+    runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
+): String = mapOutsideCodeFences(linkifyMermaid(runQueryBlocks(content, runQuery))) { segment ->
     var out = segment
 
     // ── Callouts > [!tipo] Título (o sufixo +/- de colapso é ignorado) ────

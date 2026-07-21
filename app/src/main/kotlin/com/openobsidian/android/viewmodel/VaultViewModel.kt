@@ -15,6 +15,7 @@ import com.openobsidian.android.data.LinkResolver
 import com.openobsidian.android.data.LinkRewrite
 import com.openobsidian.android.data.SearchQuery
 import com.openobsidian.android.data.Node
+import com.openobsidian.android.data.NoteQuery
 import com.openobsidian.android.data.SafFs
 import com.openobsidian.android.data.Srs
 import com.openobsidian.android.data.SrsStore
@@ -659,6 +660,30 @@ class VaultViewModel(
     }
 
     fun closeDiagnostics() = _state.update { it.copy(diagnosticsOpen = false) }
+
+    // ── Query blocks ──────────────────────────────────────────────────────
+
+    /**
+     * Runs a ```query block against the vault.
+     * Returns the note names and the lines the spec could not read — those are
+     * shown above the results instead of being dropped.
+     */
+    fun runQueryBlock(source: String): Pair<List<String>, List<String>> {
+        val s = _state.value
+        val tree = s.tree ?: return emptyList<String>() to emptyList()
+        val spec = NoteQuery.parse(source)
+        val notes = tree.allMarkdownFiles.map { f ->
+            val text = s.contentCache[f.uri.toString()].orEmpty()
+            NoteQuery.Note(
+                name = f.displayName,
+                relativePath = f.relativePath,
+                mtime = f.mtime,
+                tags = s.tagsByPath[f.relativePath].orEmpty(),
+                fields = Frontmatter.parse(text).fields.toMap(),
+            )
+        }
+        return NoteQuery.run(notes, spec).map { it.name } to spec.unknown
+    }
 
     // ── Vault backup ──────────────────────────────────────────────────────
 
