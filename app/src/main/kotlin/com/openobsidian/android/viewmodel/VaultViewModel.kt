@@ -10,6 +10,8 @@ import com.openobsidian.android.data.DocxConverter
 import com.openobsidian.android.data.LinkRewrite
 import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.SafFs
+import com.openobsidian.android.data.Srs
+import com.openobsidian.android.data.SrsStore
 import com.openobsidian.android.data.Tree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +26,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class ViewMode { EDIT, PREVIEW, SPLIT }
+
+/** One card as the review screen needs it: text resolved, ready to show. */
+data class ReviewCard(
+    val id: String,
+    val question: String,
+    val answer: String,
+    /** Which note it came from, so you can tell where to go fix it */
+    val note: String,
+)
 
 data class SearchResult(
     val file: Node.File,
@@ -235,10 +246,10 @@ class VaultViewModel(
         return runCatching {
             SafFs.writeTextChecked(appContext, file.uri, content, parent, file.name)
         }.onFailure { e ->
-            val msg = "Could not save \"${'$'}{file.displayName}\" — the file on disk is still the previous version"
+            val msg = "Could not save \"${file.displayName}\" — the file on disk is still the previous version"
             _state.update { it.copy(saveError = msg) }
             toast(msg)
-            android.util.Log.w("OpenObsidian", "save failed for ${'$'}{file.name}", e)
+            android.util.Log.w("OpenObsidian", "save failed for ${file.name}", e)
         }.isSuccess
     }
 
@@ -429,7 +440,7 @@ class VaultViewModel(
             }
             val renamed = runCatching { SafFs.rename(appContext, node.uri, safeName) }.getOrNull()
             if (renamed == null) {
-                toast("Couldn't rename \"${'$'}{node.name}\"")
+                toast("Couldn't rename \"${node.name}\"")
                 loadTree()
                 return@launch
             }
@@ -474,7 +485,7 @@ class VaultViewModel(
 
         if (notes > 0) {
             _state.update { it.copy(contentCache = updatedCache) }
-            toast("${'$'}links link(s) updated in ${'$'}notes note(s)")
+            toast("$links link(s) updated in $notes note(s)")
         }
     }
 
@@ -632,6 +643,7 @@ class VaultViewModel(
 
             val q = _state.value.searchQuery
             if (q.isNotBlank()) setSearchQuery(q)
+            syncCards()
         }
     }
 
@@ -645,6 +657,84 @@ class VaultViewModel(
         val content = s.activeContent
         viewModelScope.launch { writeNote(file, content) }
     }
+
+    // ── Flashcards ────────────────────────────────────────────────────────
+
+    private var srsCards: Map<String, Srs.Card> = emptyMap()
+
+    /**
+     * Reconciles every note's cards with the stored schedule.
+     * Runs on vault open, not only on save: a card used to exist only after you
+     * happened to edit the note it lives in.
+     */
+    fun syncCards() {
+        val tree = _state.value.tree ?: return
+        viewModelScope.launch {
+            val stored = SrsStore.load(appContext, tree.rootUri)
+            var cards = stored
+            for (file in tree.allMarkdownFiles) {
+                val text = _state.value.contentCache[file.uri.toString()]
+                    ?: SafFs.readTextOrNull(appContext, file.uri) ?: continue
+                val found = Cards.extractCards(file.relativePath, text).map { it.id to it.q }
+                cards = Srs.syncFile(cards, file.relativePath, found)
+            }
+            srsCards = cards
+            if (cards != stored) SrsStore.save(appContext, tree.rootUri, cards)
+            _state.update { it.copy(srsStats = Srs.stats(cards)) }
+        }
+    }
+
+    /**
+     * Opens a session with what is due. The answer is read from the note at
+     * review time rather than from the schedule, so fixing a typo in the note
+     * fixes the card with no re-sync.
+     */
+    fun startReview() {
+        val tree = _state.value.tree ?: return
+        viewModelScope.launch {
+            val due = Srs.dueCards(srsCards)
+            val queue = mutableListOf<ReviewCard>()
+            for ((id, card) in due) {
+                val file = tree.allMarkdownFiles.find { it.relativePath == card.file } ?: continue
+                val text = _state.value.contentCache[file.uri.toString()]
+                    ?: SafFs.readTextOrNull(appContext, file.uri) ?: continue
+                val fresh = Cards.extractCards(file.relativePath, text).find { it.id == id } ?: continue
+                queue += ReviewCard(id = id, question = fresh.q, answer = fresh.a, note = file.displayName)
+            }
+            _state.update {
+                it.copy(
+                    reviewOpen = true, reviewQueue = queue, reviewIndex = 0,
+                    reviewRevealed = false, reviewDone = 0, reviewError = false,
+                )
+            }
+        }
+    }
+
+    fun revealAnswer() = _state.update { it.copy(reviewRevealed = true) }
+
+    fun gradeCurrent(grade: Srs.Grade) {
+        val s = _state.value
+        val card = s.currentCard ?: return
+        val stored = srsCards[card.id] ?: return
+        srsCards = srsCards + (card.id to Srs.grade(stored, grade))
+        val tree = s.tree
+        viewModelScope.launch {
+            // If the schedule cannot be written, say so: a session that is not
+            // recorded looks exactly like one that is
+            val ok = tree != null && SrsStore.save(appContext, tree.rootUri, srsCards)
+            _state.update {
+                it.copy(
+                    reviewIndex = it.reviewIndex + 1,
+                    reviewRevealed = false,
+                    reviewDone = it.reviewDone + 1,
+                    srsStats = Srs.stats(srsCards),
+                    reviewError = it.reviewError || !ok,
+                )
+            }
+        }
+    }
+
+    fun closeReview() = _state.update { it.copy(reviewOpen = false, reviewQueue = emptyList()) }
 
     companion object {
         fun factory(appContext: Context, vaultUri: Uri) =
@@ -753,7 +843,17 @@ data class VaultUiState(
     val searchOpen: Boolean                     = false,
     val searchQuery: String                     = "",
     val searchResults: List<SearchResult>       = emptyList(),
+    // ── Flashcards
+    val reviewOpen: Boolean                 = false,
+    val reviewQueue: List<ReviewCard>       = emptyList(),
+    val reviewIndex: Int                    = 0,
+    val reviewRevealed: Boolean             = false,
+    val reviewDone: Int                     = 0,
+    val srsStats: Srs.Stats                 = Srs.Stats(0, 0, 0, 0),
+    /** The schedule could not be written; the session is not being recorded */
+    val reviewError: Boolean                = false,
 ) {
+    val currentCard: ReviewCard? get() = reviewQueue.getOrNull(reviewIndex)
     val canNavBack:    Boolean get() = navIndex > 0
     val canNavForward: Boolean get() = navIndex < navHistory.lastIndex
 

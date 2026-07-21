@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.openobsidian.android.data.AppSettings
 import com.openobsidian.android.data.LocalAppSettings
 import com.openobsidian.android.data.Node
+import com.openobsidian.android.data.Srs
 import com.openobsidian.android.data.VaultRepository
 import com.openobsidian.android.ui.components.DocxViewer
 import com.openobsidian.android.ui.components.FileTreeContent
@@ -87,6 +88,21 @@ fun VaultScreen(
             onQueryChange = { vm.setSearchQuery(it) },
             onResultClick = { file -> vm.openFile(file); vm.closeSearch() },
             onClose       = { vm.closeSearch() },
+        )
+        return
+    }
+
+    // ── Review overlay (covers everything, like search) ───────────────────
+    if (state.reviewOpen) {
+        ReviewScreen(
+            card           = state.currentCard,
+            revealed       = state.reviewRevealed,
+            done           = state.reviewDone,
+            remaining      = (state.reviewQueue.size - state.reviewIndex).coerceAtLeast(0),
+            scheduleFailed = state.reviewError,
+            onReveal       = { vm.revealAnswer() },
+            onGrade        = { grade -> vm.gradeCurrent(grade) },
+            onClose        = { vm.closeReview() },
         )
         return
     }
@@ -172,6 +188,17 @@ fun VaultScreen(
                             }
                             IconButton(onClick = { vm.navForward() }, enabled = state.canNavForward) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
+                            }
+                            // Only shown once the vault actually has cards —
+                            // an icon that never does anything is noise
+                            if (state.srsStats.total > 0) {
+                                IconButton(onClick = { vm.startReview() }) {
+                                    BadgedBox(badge = {
+                                        if (state.srsStats.due > 0) Badge { Text("${state.srsStats.due}") }
+                                    }) {
+                                        Icon(Icons.Default.Style, contentDescription = "Review flashcards")
+                                    }
+                                }
                             }
                             IconButton(onClick = { vm.openSearch() }) {
                                 Icon(Icons.Default.Search, contentDescription = "Search")
