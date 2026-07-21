@@ -110,6 +110,17 @@ fun VaultScreen(
         return
     }
 
+    // ── Vault diagnostics overlay ─────────────────────────────────────────
+    if (state.diagnosticsOpen) {
+        DiagnosticsScreen(
+            brokenLinks    = state.brokenLinks,
+            orphanNotes    = state.orphanNotes,
+            duplicateNames = state.duplicateNames,
+            onClose        = { vm.closeDiagnostics() },
+        )
+        return
+    }
+
     // ── Android Back: navigate within the app instead of closing it ───────
     // Priority: open drawer → close it; nav history → step back; open note → close it.
     // Disabled (lets the system exit) only at the root with nothing open.
@@ -239,6 +250,14 @@ fun VaultScreen(
                                             // A barra vive no editor — garante um modo com editor visível.
                                             if (state.viewMode == ViewMode.PREVIEW) vm.setViewMode(ViewMode.EDIT)
                                             findBarOpen = true
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text        = { Text(stringResource(R.string.menu_diagnostics)) },
+                                        leadingIcon = { Icon(Icons.Default.HealthAndSafety, contentDescription = null) },
+                                        onClick     = {
+                                            showNoteMenu = false
+                                            vm.openDiagnostics()
                                         },
                                     )
                                     DropdownMenuItem(

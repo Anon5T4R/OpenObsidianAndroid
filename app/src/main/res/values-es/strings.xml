@@ -141,4 +141,10 @@
     <string name="toast_name_exists">\"%1$s\" ya existe ahí</string>
     <string name="toast_move_failed">No pude mover \"%1$s\"</string>
     <string name="toast_link_unresolved">Ninguna nota llamada \"%1$s\"</string>
-</resources>
+    <string name="diagnostics_title">Diagnóstico del vault</string>
+    <string name="menu_diagnostics">Diagnóstico del vault</string>
+    <string name="diagnostics_clean">Nada que reportar: ningún enlace roto, ninguna nota huérfana, ningún nombre duplicado.</string>
+    <string name="diagnostics_broken">Enlaces rotos (%1$d)</string>
+    <string name="diagnostics_orphans">Notas huérfanas (%1$d)</string>
+    <string name="diagnostics_duplicates">Nombres duplicados (%1$d)</string>
+    <string name="diagnostics_notes_count">%1$d notas con este nombre</string></resources>

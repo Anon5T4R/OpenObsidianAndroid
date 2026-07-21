@@ -148,4 +148,10 @@
     <string name="toast_name_exists">\"%1$s\" already exists there</string>
     <string name="toast_move_failed">Couldn\'t move \"%1$s\"</string>
     <string name="toast_link_unresolved">No note called \"%1$s\"</string>
-</resources>
+    <string name="diagnostics_title">Vault diagnostics</string>
+    <string name="menu_diagnostics">Vault diagnostics</string>
+    <string name="diagnostics_clean">Nothing to report: no broken links, no orphan notes, no duplicate names.</string>
+    <string name="diagnostics_broken">Broken links (%1$d)</string>
+    <string name="diagnostics_orphans">Orphan notes (%1$d)</string>
+    <string name="diagnostics_duplicates">Duplicate names (%1$d)</string>
+    <string name="diagnostics_notes_count">%1$d notes with this name</string></resources>

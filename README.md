@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **2.1.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **2.2.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,15 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Navegação e busca
+- **Wikilinks completos**: `[[Nota#Seção]]`, `[[Pasta/Nota]]` e **aliases** do
+  frontmatter. Antes só funcionava o nome exato — o resto não fazia nada ao ser
+  tocado. Nome duplicado prefere a nota mais próxima de quem linka.
+- **Busca com operadores**: `tag:`, `path:`, `file:`, `"frase exata"` e
+  `-exclusão`. A tag pai encontra as filhas. Resultados por relevância.
+- **Diagnóstico do vault** (menu ⋮): links mortos com quem aponta pra eles,
+  notas órfãs e nomes duplicados.
 
 ### Idiomas
 - Interface em **português, inglês e espanhol**, seguindo o idioma do sistema.

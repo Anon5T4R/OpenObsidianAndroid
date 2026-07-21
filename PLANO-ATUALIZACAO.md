@@ -19,11 +19,11 @@
 | **Frontmatter YAML + tags com acento/hierarquia** | ✅ 1.4.0 | — |
 | **Flashcards com SM-2 + revisão** | ✅ 1.4.0 | — |
 | Gravação atômica | ⚠️ parcial | SAF não tem substituição atômica; há cópia `.bak` antes de truncar |
-| Wikilink com `#seção` e `Pasta/Nota` | ❌ | Fase 2 — portar `linkResolver` |
+| **Wikilink com `#seção` e `Pasta/Nota`** | ✅ 2.2.0 | — |
 | Embed `![[Nota]]` de nota (imagem já funciona) | ❌ | Fase 2 |
-| Aliases do frontmatter resolvendo links | ❌ | Fase 2 — o parser já lê `aliases:` |
-| Links mortos visíveis + diagnóstico do vault | ❌ | Fase 2 |
-| Busca com operadores (`tag:`, `path:`, frase exata) | ❌ | Fase 2 — o índice de tags já existe |
+| **Aliases do frontmatter resolvendo links** | ✅ 2.2.0 | — |
+| **Diagnóstico do vault** | ✅ 2.2.0 | Links mortos, órfãs e nomes duplicados |
+| **Busca com operadores** | ✅ 2.2.0 | `tag:`, `path:`, `file:`, frase exata, `-exclusão`, por relevância |
 | Blocos ```query | ❌ | Fase 3 |
 | Calendário sobre as notas diárias | ❌ | Fase 3 |
 | Import de `.apkg` do Anki | ❌ | Fase 3 — sql.js não serve aqui; avaliar SQLite nativo |
