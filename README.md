@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **1.4.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **2.0.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,14 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Diagramas
+- **Mermaid**: um bloco ` ```mermaid ` vira um link no preview; tocar abre o
+  diagrama em **tela cheia, com pinça pra dar zoom**. Inline seria ilegível num
+  celular, e é assim que o desktop também faz no clique.
+- O `mermaid.min.js` está embutido no app e o WebView roda **com a rede
+  bloqueada** — diagrama que depende de CDN é diagrama que falha offline.
+- Diagrama que não compila mostra o erro em vez de uma tela em branco.
 
 ### Integridade
 - **Renomear reescreve os `[[links]]`** que apontavam para a nota, preservando
