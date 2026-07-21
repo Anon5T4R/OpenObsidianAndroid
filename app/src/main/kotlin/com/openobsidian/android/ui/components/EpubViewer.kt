@@ -6,6 +6,8 @@ import android.net.Uri
 import android.webkit.WebView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -136,8 +138,8 @@ fun EpubViewer(
 
 @Composable
 private fun LazyChapterList(chapters: List<Epub.Chapter>, current: Int, onPick: (Int) -> Unit) {
-    androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
-        androidx.compose.foundation.lazy.itemsIndexed(chapters) { i, c ->
+    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
+        itemsIndexed(chapters) { i, c ->
             ListItem(
                 headlineContent = { Text(c.title) },
                 modifier = Modifier.clickable { onPick(i) },
