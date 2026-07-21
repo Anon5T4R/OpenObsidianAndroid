@@ -5,7 +5,7 @@ pasta local do seu dispositivo (um "vault") via Storage Access Framework e
 trabalha direto nos seus arquivos `.md` — sem nuvem, sem banco de dados, sem
 lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 
-> Versão atual: **2.4.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
+> Versão atual: **3.0.0** · minSdk **28** (Android 9+) · 100% Kotlin + Jetpack Compose
 
 ---
 
@@ -32,6 +32,11 @@ lock-in. Tudo continua sendo arquivos de texto na sua pasta.
 - O agendamento fica em `.openobsidian/srs.json` — **nunca dentro das notas** —
   e é **o mesmo arquivo que o desktop escreve**: um cartão revisado aqui não é
   cobrado de novo lá à noite.
+
+### Leitura
+- **Visualizador de EPUB**: um capítulo por vez, com sumário e zoom. Sem
+  biblioteca de leitor — um `.epub` é um ZIP com um manifesto XML, e o
+  WebView já renderiza o resto.
 
 ### Consultas
 - **Blocos ` `query ` `** no preview: um índice que se deriva das notas

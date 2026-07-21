@@ -26,13 +26,13 @@
 | **Busca com operadores** | ✅ 2.2.0 | `tag:`, `path:`, `file:`, frase exata, `-exclusão`, por relevância |
 | **Blocos ```query** | ✅ 2.4.0 | tag:, pasta:, has:, campos do frontmatter, ordenar, limite |
 | Calendário sobre as notas diárias | ❌ | Fase 3 |
-| Import de `.apkg` do Anki | ❌ | **Adiado** — o vault é compartilhado: importe no desktop e sincronize. Traria uma dependência nativa de zstd só pro celular |
-| Estatísticas de revisão | ⚠️ parcial | Lógica pronta e testada (SrsReport); falta a tela |
+| **Import de `.apkg` do Anki** | ✅ 3.0.0 | SQLite nativo, sem dependência. Pacote zstd (Anki 2.1.50+) é recusado com a instrução de reexportar |
+| **Estatísticas de revisão** | ✅ 3.0.0 | Retenção, previsão de 14 dias, notas com mais cartões |
 | **i18n (PT-BR / EN / ES)** | ✅ 2.1.0 | ~95 strings em strings.xml + values-pt-rBR + values-es |
 | **Mermaid** | ✅ 2.0.0 | Toque abre em tela cheia com zoom; `mermaid.min.js` nos assets, WebView sem rede |
 | **Backup do vault (.zip)** | ✅ 2.3.0 | Destino via SAF; inclui anexos e estado |
 | **Cache persistente do índice** | ✅ 2.3.0 | Validado por mtime, fora do vault |
-| EPUB | ❌ | Fase 3 |
+| **EPUB** | ✅ 3.0.0 | Um capítulo por vez, sumário, zoom; sem biblioteca |
 | Grafo (D3) | ❌ | **Não portar** — tentado e removido de propósito (commit 4b90284) |
 | Chat/IA local, sistema de plugins | ❌ | Fora de escopo no mobile |
 
