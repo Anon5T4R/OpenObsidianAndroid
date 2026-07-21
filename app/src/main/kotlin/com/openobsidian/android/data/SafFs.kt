@@ -86,7 +86,7 @@ object SafFs {
             ?: return@withContext Tree.empty(rootUri)
         val rootName = root.name ?: "Vault"
         val images   = HashMap<String, Uri>()
-        val children = walkInto(context, rootUri, images)
+        val children = walkInto(context, rootUri, images, "")
         Tree(name = rootName, rootUri = rootUri, root = children, images = images)
     }
 
@@ -94,13 +94,14 @@ object SafFs {
         context: Context,
         dirUri: Uri,
         images: MutableMap<String, Uri>,
+        prefix: String,
     ): List<Node> {
         val entries = listChildren(context, dirUri)
         val out = ArrayList<Node>(entries.size)
         for (e in entries) {
             if (e.name.startsWith(".")) continue
             if (e.isDirectory) {
-                val children = walkInto(context, e.uri, images)
+                val children = walkInto(context, e.uri, images, "$prefix${e.name}/")
                 // Show all non-hidden dirs (including empty ones the user just created)
                 out += Node.Dir(name = e.name, uri = e.uri, children = children)
             } else if (isSupportedFile(e.name)) {
@@ -109,6 +110,7 @@ object SafFs {
                     uri = e.uri,
                     size = e.size,
                     mtime = e.lastModified,
+                    relativePath = "$prefix${e.name}",
                 )
             } else if (isImageFile(e.name)) {
                 // Images aren't shown as note rows but are indexed so that
@@ -391,6 +393,15 @@ sealed class Node {
         override val uri: Uri,
         val size: Long,
         val mtime: Long,
+        /**
+         * Path from the vault root, `/` separated — `Clinica/Sepse.md`.
+         *
+         * Flashcard ids are a hash of this plus the question, and the desktop
+         * hashes the same string. Without it the phone would mint different
+         * ids for the same cards and the shared srs.json would hold each card
+         * twice, each with its own schedule.
+         */
+        val relativePath: String = name,
     ) : Node() {
         val isPdf:  Boolean get() = name.endsWith(".pdf",  ignoreCase = true)
         val isDocx: Boolean get() = name.endsWith(".docx", ignoreCase = true)
