@@ -36,8 +36,12 @@ object AnkiPackage {
      */
     fun fieldToMarkdown(s: String): String = s
         .replace(CLOZE_RE, "==$1==")
-        .replace(Regex("\\[\\$\\$]([\\s\\S]*?)\\[/\\$\\$]"), "$$$1$$")
-        .replace(Regex("\\[\\$]([\\s\\S]*?)\\[/\\$]"), "$$$1$$")
+        // Lambdas, not replacement strings: `$` starts a group reference in a
+        // Java replacement, so writing dollar-delimited maths as a string is a
+        // quiet escaping trap. The desktop gets away with it because JavaScript
+        // spells the escape differently.
+        .replace(Regex("\\[\\$\\$]([\\s\\S]*?)\\[/\\$\\$]")) { m -> "$$${m.groupValues[1]}$$" }
+        .replace(Regex("\\[\\$]([\\s\\S]*?)\\[/\\$]")) { m -> "$${m.groupValues[1]}$" }
         .replace(SOUND_RE, "")
         .replace(IMG_RE, "")
         .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), " · ")
