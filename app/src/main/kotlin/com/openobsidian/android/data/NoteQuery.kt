@@ -74,6 +74,7 @@ object NoteQuery {
                         "titulo", "título", "title", "nome", "name" -> SortKey.TITLE
                         "modificado", "modified", "mtime" -> SortKey.MODIFIED
                         "caminho", "path" -> SortKey.PATH
+                        "criado", "created" -> SortKey.CREATED
                         else -> null
                     }
                     if (sortBy == null) unknown += line
