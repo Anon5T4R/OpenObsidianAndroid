@@ -128,6 +128,7 @@ object SafFs {
         return lower.endsWith(".md") || lower.endsWith(".markdown")
             || lower.endsWith(".pdf") || lower.endsWith(".docx")
             || lower.endsWith(".epub") || lower.endsWith(".txt")
+            || lower.endsWith(".odt")
     }
 
     private val IMAGE_EXTS = listOf(".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg")
@@ -406,7 +407,10 @@ sealed class Node {
         val isPdf:  Boolean get() = name.endsWith(".pdf",  ignoreCase = true)
         val isDocx: Boolean get() = name.endsWith(".docx", ignoreCase = true)
         val isEpub: Boolean get() = name.endsWith(".epub", ignoreCase = true)
-        val isText: Boolean get() = !isPdf && !isDocx && !isEpub
+        val isOdt:  Boolean get() = name.endsWith(".odt",  ignoreCase = true)
+        /** Documento que o app sabe converter para Markdown: `.docx` e `.odt`. */
+        val isConvertible: Boolean get() = isDocx || isOdt
+        val isText: Boolean get() = !isPdf && !isDocx && !isEpub && !isOdt
         /** Display name without the .md extension. */
         val displayName: String get() = name.removeSuffix(".md").removeSuffix(".markdown")
     }

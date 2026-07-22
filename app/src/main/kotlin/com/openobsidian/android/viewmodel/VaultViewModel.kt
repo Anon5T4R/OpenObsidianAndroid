@@ -14,6 +14,7 @@ import com.openobsidian.android.data.Frontmatter
 import com.openobsidian.android.data.IndexCache
 import com.openobsidian.android.data.IndexStore
 import com.openobsidian.android.data.LinkResolver
+import com.openobsidian.android.data.OdtConverter
 import com.openobsidian.android.data.LinkRewrite
 import com.openobsidian.android.data.SearchQuery
 import com.openobsidian.android.data.Node
@@ -361,12 +362,15 @@ class VaultViewModel(
     // ── DOCX → Markdown conversion ────────────────────────────────────────
 
     fun convertDocxToMd(file: Node.File) {
-        if (!file.isDocx) return
+        if (!file.isConvertible) return
         val tree = _state.value.tree ?: return
         viewModelScope.launch {
             _state.update { it.copy(contentLoading = true) }
             val md = withContext(Dispatchers.IO) {
-                DocxConverter.convert(appContext, file.uri)
+                // .odt e .docx são os dois ZIP+XML que o app lê; o resto
+                // do caminho (criar o .md, abrir, indexar) é idêntico
+                if (file.isOdt) OdtConverter.convert(appContext, file.uri)
+                else DocxConverter.convert(appContext, file.uri)
             }
             val baseName = file.displayName
             val newUri   = runCatching {

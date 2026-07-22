@@ -628,7 +628,7 @@ private fun NoteArea(
         )
         return
     }
-    if (file.isDocx) {
+    if (file.isConvertible) {
         DocxViewer(
             file                = file,
             onOpenCompanionNote = onOpenCompanionNote,
