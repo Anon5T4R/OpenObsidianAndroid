@@ -286,4 +286,6 @@
     <string name="insert_no_match">Nada encontrado</string>
     <string name="insert_hint_slash">Ou digite / no editor</string>
     <string name="tag_complete_notes">%d notas</string>
+    <string name="query_sort_no_created">sort: criado — %1$d de %2$d notas não declaram data de criação, então esta ordem não quer dizer nada</string>
+    <string name="query_sort_not_iso">sort: criado — %1$s não é AAAA-MM-DD, e datas são comparadas como texto; escreva como 2026-07-21</string>
 </resources>

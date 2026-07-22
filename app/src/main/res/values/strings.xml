@@ -293,4 +293,6 @@
     <string name="insert_no_match">Nothing matches</string>
     <string name="insert_hint_slash">Or type / in the editor</string>
     <string name="tag_complete_notes">%d notes</string>
+    <string name="query_sort_no_created">sort: criado — %1$d of %2$d notes do not declare a creation date, so this order is not meaningful</string>
+    <string name="query_sort_not_iso">sort: criado — %1$s is not YYYY-MM-DD, and dates are compared as text; write it as 2026-07-21</string>
 </resources>

@@ -685,7 +685,20 @@ class VaultViewModel(
                 fields = Frontmatter.parse(text).fields.toMap(),
             )
         }
-        return NoteQuery.run(notes, spec).map { it.name } to spec.unknown
+        val found = NoteQuery.run(notes, spec)
+        // `sort: criado` is the one key that can be read but not always
+        // honoured. It used to fail silently — a list in vault scan order looks
+        // sorted — so the complaint goes into the same box an unreadable line
+        // uses: the block asked for something it did not get.
+        val warnings = NoteQuery.sortIssues(found, spec).map { issue ->
+            when (issue) {
+                is NoteQuery.SortIssue.CreatedMissing ->
+                    appContext.getString(R.string.query_sort_no_created, issue.missing, issue.total)
+                is NoteQuery.SortIssue.CreatedNotIso ->
+                    appContext.getString(R.string.query_sort_not_iso, issue.sample)
+            }
+        }
+        return found.map { it.name } to (spec.unknown + warnings)
     }
 
     // ── Vault backup ──────────────────────────────────────────────────────

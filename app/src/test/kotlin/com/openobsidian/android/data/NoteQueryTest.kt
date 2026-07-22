@@ -118,4 +118,76 @@ class NoteQueryTest {
     fun `a field that does not exist matches nothing`() {
         assertFalse(NoteQuery.matches(vault[2], NoteQuery.parse("tipo: patologia")))
     }
+
+    // ── sort: criado ─────────────────────────────────────────────────────────
+
+    private fun nota(name: String, criado: String? = null) = NoteQuery.Note(
+        name = name,
+        relativePath = "$name.md",
+        mtime = 0L,
+        tags = listOf("x"),
+        fields = if (criado == null) emptyMap() else mapOf("criado" to listOf(criado)),
+    )
+
+    private val porCriado get() = NoteQuery.parse("tag: x\nsort: criado")
+
+    @Test
+    fun `criado is accepted, like the desktop accepts it`() {
+        // It used to fall through to unknown here while the desktop honoured
+        // it, so the same index warned on one platform and worked on the other
+        assertEquals(emptyList<String>(), porCriado.unknown)
+        assertEquals(NoteQuery.SortKey.CREATED, porCriado.sortBy)
+    }
+
+    @Test
+    fun `ISO dates sort chronologically, which is why ISO is the supported form`() {
+        val r = NoteQuery.run(listOf(nota("Jul", "2026-07-21"), nota("Jan", "2026-01-05")), porCriado)
+        assertEquals(listOf("Jan", "Jul"), r.map { it.name })
+    }
+
+    @Test
+    fun `says nothing when every note carries an ISO date`() {
+        val notes = listOf(nota("A", "2026-01-05"), nota("B", "2026-07-21"))
+        assertEquals(emptyList<NoteQuery.SortIssue>(), NoteQuery.sortIssues(notes, porCriado))
+    }
+
+    @Test
+    fun `reports that nobody declares the field`() {
+        // The silent one: all values tie, a stable sort returns scan order, and
+        // the list looks ordered
+        val issues = NoteQuery.sortIssues(listOf(nota("A"), nota("B")), porCriado)
+        assertEquals(listOf(NoteQuery.SortIssue.CreatedMissing(2, 2)), issues)
+    }
+
+    @Test
+    fun `reports a partly filled set, where the gaps clump at one end`() {
+        val issues = NoteQuery.sortIssues(listOf(nota("A", "2026-01-05"), nota("B")), porCriado)
+        assertTrue(issues.contains(NoteQuery.SortIssue.CreatedMissing(1, 2)))
+    }
+
+    @Test
+    fun `reports a date that is not ISO, quoting the offender`() {
+        val issues = NoteQuery.sortIssues(listOf(nota("A", "21/07/2025"), nota("B", "2026-01-05")), porCriado)
+        assertTrue(issues.contains(NoteQuery.SortIssue.CreatedNotIso("21/07/2025")))
+    }
+
+    @Test
+    fun `does not try to guess what 03 01 2026 means`() {
+        // 3 January or 1 March depending on where you live. Reported, never fixed.
+        val issues = NoteQuery.sortIssues(listOf(nota("A", "03/01/2026"), nota("B", "2026-05-01")), porCriado)
+        assertTrue(issues.any { it is NoteQuery.SortIssue.CreatedNotIso })
+    }
+
+    @Test
+    fun `stays quiet for every other sort key`() {
+        for (key in listOf("titulo", "modificado", "caminho")) {
+            val spec = NoteQuery.parse("tag: x\nsort: $key")
+            assertEquals(key, emptyList<NoteQuery.SortIssue>(), NoteQuery.sortIssues(listOf(nota("A"), nota("B")), spec))
+        }
+    }
+
+    @Test
+    fun `stays quiet when nothing matched, since there is nothing to mis-order`() {
+        assertEquals(emptyList<NoteQuery.SortIssue>(), NoteQuery.sortIssues(emptyList(), porCriado))
+    }
 }
