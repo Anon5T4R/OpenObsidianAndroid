@@ -425,6 +425,7 @@ fun VaultScreen(
                             onOpenCompanionNote = { vm.openCompanionNote(state.activeFile!!) },
                             resolveImage        = { name -> vm.resolveFile(name) },
                             runQuery            = { src -> vm.runQueryBlock(src) },
+            resolveEmbed        = { name -> vm.noteMarkdown(name) },
                             onConvertDocx       = { vm.convertDocxToMd(state.activeFile!!) },
                             onImportImage       = { uri -> vm.importImage(uri) },
                             tocOpen             = tocOpen,
@@ -607,6 +608,7 @@ private fun NoteArea(
     onOpenCompanionNote: () -> Unit = {},
     resolveImage: (String) -> Uri? = { null },
     runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
+    resolveEmbed: ((String) -> String?)? = null,
     onConvertDocx: () -> Unit = {},
     onImportImage: (suspend (Uri) -> String?)? = null,
     tocOpen: Boolean = false,
@@ -677,6 +679,7 @@ private fun NoteArea(
                 onWikilinkClick  = onWikilinkClick,
                 resolveImage     = resolveImage,
                 runQuery         = runQuery,
+                resolveEmbed     = resolveEmbed,
                 onToggleCheckbox = onContentChange,
                 scrollConnection = previewConn,
             )
@@ -699,7 +702,8 @@ private fun NoteArea(
                         modifier         = Modifier.weight(1f).fillMaxHeight(),
                         onWikilinkClick  = onWikilinkClick,
                         resolveImage     = resolveImage,
-                runQuery         = runQuery,
+                        runQuery         = runQuery,
+                        resolveEmbed     = resolveEmbed,
                         onToggleCheckbox = onContentChange,
                         scrollConnection = previewConn,
                     )

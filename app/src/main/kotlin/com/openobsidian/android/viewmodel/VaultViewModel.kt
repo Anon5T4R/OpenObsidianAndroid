@@ -671,6 +671,28 @@ class VaultViewModel(
      * Returns the note names and the lines the spec could not read — those are
      * shown above the results instead of being dropped.
      */
+    /**
+     * O Markdown da nota apontada por um `![[embed]]`, ou `null` se não houver
+     * nota atrás do alvo.
+     *
+     * Lê do cache em memória, que já é preenchido ao abrir o vault — resolver
+     * embed com leitura de disco travaria a renderização, e é chamado a cada
+     * recomposição. Resolve pelo mesmo caminho do wikilink (nome, caminho ou
+     * alias), senão `![[X]]` e `[[X]]` apontariam para notas diferentes.
+     */
+    fun noteMarkdown(target: String): String? {
+        val s = _state.value
+        val ref = LinkResolver.resolve(
+            refsOf(s.tree),
+            target,
+            s.activeFile?.relativePath,
+            s.aliases,
+        ) ?: return null
+        // Cache vazio para essa nota significa "ainda não lido", não "vazia":
+        // devolver "" faria o embed sumir em silêncio
+        return s.contentCache[ref.key]?.takeIf { it.isNotBlank() }
+    }
+
     fun runQueryBlock(source: String): Pair<List<String>, List<String>> {
         val s = _state.value
         val tree = s.tree ?: return emptyList<String>() to emptyList()

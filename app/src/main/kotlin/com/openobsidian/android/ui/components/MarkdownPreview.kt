@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import com.openobsidian.android.data.Embeds
 import com.openobsidian.android.data.LocalAppSettings
 import com.openobsidian.android.data.MarkdownTransforms
 import androidx.compose.ui.viewinterop.AndroidView
@@ -63,6 +64,8 @@ fun MarkdownPreview(
     onToggleCheckbox: ((String) -> Unit)? = null,
     /** Roda um bloco ```query e devolve os nomes das notas + linhas ilegíveis */
     runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
+    /** Markdown da nota apontada por um `![[embed]]`, ou null se não existir */
+    resolveEmbed: ((String) -> String?)? = null,
     scrollConnection: PreviewScrollConnection? = null,
 ) {
     val context   = LocalContext.current
@@ -75,8 +78,10 @@ fun MarkdownPreview(
     val contentRef       = remember { mutableStateOf(content) }
     val toggleRef        = remember { mutableStateOf(onToggleCheckbox) }
     val queryRef         = remember { mutableStateOf(runQuery) }
+    val embedRef         = remember { mutableStateOf(resolveEmbed) }
     SideEffect {
         queryRef.value         = runQuery
+        embedRef.value         = resolveEmbed
         callbackRef.value      = onWikilinkClick
         imageResolverRef.value = resolveImage
         contentRef.value       = content
@@ -248,7 +253,7 @@ fun MarkdownPreview(
             val tv = scrollView.getChildAt(0) as TextView
             tv.setTextColor(textColor)
             tv.textSize = fontSize
-            markwon.setMarkdown(tv, preprocessMarkdown(content, imageResolverRef.value, queryRef.value))
+            markwon.setMarkdown(tv, preprocessMarkdown(content, imageResolverRef.value, queryRef.value, embedRef.value))
 
             // Registra o handler de "rolar até o heading" usado pelo sumário.
             // Procura a occurrence-ésima linha renderizada idêntica ao texto do
@@ -355,6 +360,7 @@ private fun preprocessMarkdown(
     content: String,
     resolveImage: ((String) -> Uri?)? = null,
     runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
+    resolveEmbed: ((String) -> String?)? = null,
 ): String = mapOutsideCodeFences(linkifyMermaid(runQueryBlocks(content, runQuery))) { segment ->
     var out = segment
 
@@ -388,6 +394,15 @@ private fun preprocessMarkdown(
             val uri  = resolveImage(name)
             if (uri != null) "![$name]($uri)" else m.value
         }
+    }
+
+    // ── Transclusão ![[Nota]] / ![[Nota#Seção]] ──────────────────────────
+    // Depois do passe de imagem, para que uma imagem continue sendo imagem, e
+    // antes dos wikilinks, para que o conteúdo trazido também tenha os links
+    // dele resolvidos. O que não resolve fica literal na tela — um embed que
+    // some calado esconderia que falta uma nota.
+    if (resolveEmbed != null) {
+        out = Embeds.expand(out, resolveEmbed)
     }
 
     // ── Wikilinks [[target]] or [[target|display]]
