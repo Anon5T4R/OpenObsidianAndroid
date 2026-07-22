@@ -87,6 +87,10 @@ fun VaultScreen(
         ActivityResultContracts.OpenDocument(),
     ) { picked -> if (picked != null) vm.readAnkiPackage(picked) }
 
+    // Contador, não booleano: tocar o botão duas vezes seguidas precisa abrir
+    // o menu as duas vezes, e um booleano já em `true` não notificaria nada.
+    var insertRequest by remember { mutableStateOf<Int?>(null) }
+
     // Barra lateral fixa (tela larga/paisagem): recolher/expandir.
     // No retrato (modal) isso não se aplica — lá o gesto de puxar cuida disso.
     var sidebarCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -253,6 +257,15 @@ fun VaultScreen(
                     actions = {
                         if (state.activeFile?.isText == true) {
                             ViewModeToggle(current = state.viewMode, onSelect = { vm.setViewMode(it) })
+                            // Typing `/` at line start is not something anyone
+                            // discovers on a phone. Without a button the whole
+                            // catalogue — flashcards, callouts, diagrams — is
+                            // reachable only by someone who already knows it.
+                            if (state.viewMode != ViewMode.PREVIEW) {
+                                IconButton(onClick = { insertRequest = (insertRequest ?: 0) + 1 }) {
+                                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.insert_title))
+                                }
+                            }
                         }
                         if (state.tree != null) {
                             IconButton(onClick = { vm.navBack() },    enabled = state.canNavBack) {
@@ -376,6 +389,8 @@ fun VaultScreen(
                             viewMode            = state.viewMode,
                             onContentChange     = { vm.updateContent(it) },
                             // Inverted once per index change, not per keystroke
+                            insertRequest       = insertRequest,
+                            onInsertRequestHandled = { insertRequest = null },
                             tagCounts           = remember(state.tagsByPath) {
                                 TagComplete.countTags(state.tagsByPath)
                             },
@@ -577,6 +592,8 @@ private fun NoteArea(
     onFindBarClose: () -> Unit = {},
     /** tag -> quantas notas a carregam, para o autocomplete do # */
     tagCounts: Map<String, Int> = emptyMap(),
+    insertRequest: Int? = null,
+    onInsertRequestHandled: () -> Unit = {},
 ) {
     if (file.isPdf) {
         PdfViewer(
@@ -624,6 +641,8 @@ private fun NoteArea(
                 content, onContentChange, Modifier.fillMaxSize(),
                 onImportImage          = onImportImage,
                 tagCounts              = tagCounts,
+                insertRequest          = insertRequest,
+                onInsertRequestHandled = onInsertRequestHandled,
                 cursorRequest          = editorCursorRequest,
                 onCursorRequestHandled = { editorCursorRequest = null },
                 findBarVisible         = findBarOpen,
@@ -644,6 +663,8 @@ private fun NoteArea(
                         content, onContentChange, Modifier.weight(1f).fillMaxHeight(),
                         onImportImage          = onImportImage,
                         tagCounts              = tagCounts,
+                        insertRequest          = insertRequest,
+                        onInsertRequestHandled = onInsertRequestHandled,
                         cursorRequest          = editorCursorRequest,
                         onCursorRequestHandled = { editorCursorRequest = null },
                         findBarVisible         = findBarOpen,

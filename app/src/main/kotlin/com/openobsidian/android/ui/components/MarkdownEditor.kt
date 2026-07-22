@@ -104,6 +104,9 @@ fun MarkdownEditor(
     tagCounts: Map<String, Int> = emptyMap(),
     cursorRequest: Int? = null,
     onCursorRequestHandled: () -> Unit = {},
+    /** Bumped by the toolbar button to open the insert picker at the cursor. */
+    insertRequest: Int? = null,
+    onInsertRequestHandled: () -> Unit = {},
     findBarVisible: Boolean = false,
     onFindBarClose: () -> Unit = {},
 ) {
@@ -151,6 +154,20 @@ fun MarkdownEditor(
     var showSlash  by remember { mutableStateOf(false) }
     var slashStart by remember { mutableStateOf(-1) }
     var slashQuery by remember { mutableStateOf("") }
+    // 1 when the picker was opened by typing `/`, 0 when it was opened by the
+    // toolbar button — the button leaves no trigger character to skip over.
+    var slashTriggerLen by remember { mutableStateOf(1) }
+
+    // Opened from the toolbar. Typing `/` at line start is not a thing anyone
+    // discovers on a phone; a button is how you find out the catalogue exists.
+    LaunchedEffect(insertRequest) {
+        if (insertRequest == null) return@LaunchedEffect
+        slashStart = tfv.selection.start.coerceIn(0, tfv.text.length)
+        slashQuery = ""
+        slashTriggerLen = 0
+        showSlash = true
+        onInsertRequestHandled()
+    }
 
     // ── Tag autocomplete state ───────────────────────────────────────────────
     // Recomputed only when the vault index changes, not on every keystroke
@@ -315,7 +332,7 @@ fun MarkdownEditor(
             if (!new.selection.collapsed || cursor <= slashStart) {
                 showSlash = false
             } else {
-                val afterSlash = text.substring(slashStart + 1, minOf(cursor, text.length))
+                val afterSlash = text.substring(minOf(slashStart + slashTriggerLen, text.length), minOf(cursor, text.length))
                 if (afterSlash.contains('\n') || afterSlash.length > 20) {
                     showSlash = false
                 } else {
@@ -325,6 +342,7 @@ fun MarkdownEditor(
         } else {
             // Detect new '/' at line start
             if (new.selection.collapsed && cursor > 0 && text.getOrNull(cursor - 1) == '/') {
+                slashTriggerLen = 1
                 val lineStart = text.lastIndexOf('\n', cursor - 2).let { if (it < 0) 0 else it + 1 }
                 val prefix    = text.substring(lineStart, cursor - 1).trim()
                 if (prefix.isEmpty()) {
