@@ -21,9 +21,11 @@ class MarkdownTransformsTest {
 
     @Test
     fun `dois comentarios nao viram um so`() {
-        // Com regex gulosa, "fica" desapareceria junto — é o erro clássico aqui
+        // Com regex gulosa, "fica" desapareceria junto — é o erro clássico aqui.
+        // Os espaços dobrados são o resultado correto: o passe tira o comentário,
+        // não o espaçamento em volta dele, e o Markdown colapsa isso ao renderizar.
         assertEquals(
-            "a fica b",
+            "a  fica  b",
             MarkdownTransforms.stripComments("a %%um%% fica %%dois%% b"),
         )
     }
