@@ -38,42 +38,47 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openobsidian.android.R
+import com.openobsidian.android.data.Insertables
+import com.openobsidian.android.data.TagComplete
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Slash commands catalogue
 // ─────────────────────────────────────────────────────────────────────────────
 
-private data class SlashCmd(
-    val icon: ImageVector,
-    val label: String,
-    val snippet: String,
-    /** Characters to move cursor back from end of snippet (0 = stay at end). */
-    val cursorBack: Int = 0,
-    /** When true, selecting this command launches the gallery picker instead of inserting [snippet]. */
-    val isImageImport: Boolean = false,
-)
+// The catalogue itself lives in data/Insertables.kt, shared with the insert
+// sheet and translated in strings.xml. There used to be a hand-written list of
+// eighteen right here, in English only, mentioning none of the things this app
+// is for — no flashcards, callouts, Mermaid, maths, note embeds or query
+// blocks. A second list is the bug.
 
-private val SLASH_COMMANDS = listOf(
-    SlashCmd(Icons.Default.Title,                "Heading 1",       "# "),
-    SlashCmd(Icons.Default.Title,                "Heading 2",       "## "),
-    SlashCmd(Icons.Default.Title,                "Heading 3",       "### "),
-    SlashCmd(Icons.Default.FormatBold,           "Bold",            "**bold**",            4),
-    SlashCmd(Icons.Default.FormatItalic,         "Italic",          "*italic*",            7),
-    SlashCmd(Icons.Default.FormatStrikethrough,  "Strikethrough",   "~~text~~",            6),
-    SlashCmd(Icons.Default.FormatColorFill,      "Highlight",       "==text==",            2),
-    SlashCmd(Icons.Default.Code,                 "Inline code",     "`code`",              5),
-    SlashCmd(Icons.Default.DataObject,           "Code block",      "```\n\n```",          4),
-    SlashCmd(Icons.Default.TableChart,           "Table",           "| Col 1 | Col 2 |\n|---|---|\n| Cell | Cell |"),
-    SlashCmd(Icons.Default.FormatListBulleted,   "Bullet list",     "- "),
-    SlashCmd(Icons.Default.FormatListNumbered,   "Numbered list",   "1. "),
-    SlashCmd(Icons.Default.CheckBox,             "Checkbox",        "- [ ] "),
-    SlashCmd(Icons.Default.Link,                 "Wikilink",        "[[link]]",            2),
-    SlashCmd(Icons.Default.Image,                "Image (embed)",   "![[image.png]]",      10),
-    SlashCmd(Icons.Default.AddPhotoAlternate,    "Image from gallery", "", isImageImport = true),
-    SlashCmd(Icons.Default.FormatQuote,          "Quote",           "> "),
-    SlashCmd(Icons.Default.HorizontalRule,       "Divider",         "---\n"),
-)
+private fun iconFor(item: Insertables.Item): ImageVector = when (item.id) {
+    "h1", "h2", "h3" -> Icons.Default.Title
+    "bold" -> Icons.Default.FormatBold
+    "italic" -> Icons.Default.FormatItalic
+    "strike" -> Icons.Default.FormatStrikethrough
+    "highlight" -> Icons.Default.FormatColorFill
+    "inlineCode" -> Icons.Default.Code
+    "codeBlock" -> Icons.Default.DataObject
+    "table" -> Icons.Default.TableChart
+    "bulletList" -> Icons.Default.FormatListBulleted
+    "numList" -> Icons.Default.FormatListNumbered
+    "task" -> Icons.Default.CheckBox
+    "quote" -> Icons.Default.FormatQuote
+    "hr" -> Icons.Default.HorizontalRule
+    "imageRef" -> Icons.Default.Image
+    "imagePick" -> Icons.Default.AddPhotoAlternate
+    "webLink" -> Icons.Default.Link
+    else -> when (item.category) {
+        Insertables.Category.LINKS -> Icons.Default.Link
+        Insertables.Category.STUDY -> Icons.Default.Style
+        Insertables.Category.CALLOUTS -> Icons.Default.Info
+        Insertables.Category.DIAGRAMS -> Icons.Default.AccountTree
+        Insertables.Category.DATA -> Icons.Default.Tag
+        Insertables.Category.SYMBOLS -> Icons.Default.Bolt
+        else -> Icons.Default.Notes
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main composable
@@ -95,6 +100,8 @@ fun MarkdownEditor(
     onContentChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     onImportImage: (suspend (Uri) -> String?)? = null,
+    /** tag → how many notes carry it, for the `#` autocomplete. */
+    tagCounts: Map<String, Int> = emptyMap(),
     cursorRequest: Int? = null,
     onCursorRequestHandled: () -> Unit = {},
     findBarVisible: Boolean = false,
@@ -144,6 +151,14 @@ fun MarkdownEditor(
     var showSlash  by remember { mutableStateOf(false) }
     var slashStart by remember { mutableStateOf(-1) }
     var slashQuery by remember { mutableStateOf("") }
+
+    // ── Tag autocomplete state ───────────────────────────────────────────────
+    // Recomputed only when the vault index changes, not on every keystroke
+    var tagStart by remember { mutableStateOf(-1) }
+    var tagQuery by remember { mutableStateOf("") }
+    val tagMatches = remember(tagQuery, tagCounts) {
+        if (tagStart < 0) emptyList() else TagComplete.rank(tagCounts, tagQuery)
+    }
 
     // ── Image import (gallery picker) ─────────────────────────────────────────
     val scope = rememberCoroutineScope()
@@ -228,7 +243,7 @@ fun MarkdownEditor(
         onContentChange(newText)
     }
 
-    fun insertSnippet(cmd: SlashCmd) {
+    fun insertSnippet(cmd: Insertables.Item) {
         val text   = tfv.text
         val cursor = tfv.selection.start
 
@@ -245,11 +260,28 @@ fun MarkdownEditor(
             return
         }
 
-        val newText   = text.substring(0, slashStart) + cmd.snippet + text.substring(cursor)
-        val newCursor = slashStart + cmd.snippet.length - cmd.cursorBack
-        tfv = TextFieldValue(newText, selection = TextRange(newCursor))
+        // The cursor position comes from a marker inside the snippet, not from
+        // an offset counted by hand — the desktop counts backwards from the end
+        // and got it wrong three times, twice landing the caret inside a word so
+        // the first keystroke destroyed the snippet.
+        val insertion = Insertables.resolve(cmd)
+        val newText   = text.substring(0, slashStart) + insertion.text + text.substring(cursor)
+        tfv = TextFieldValue(newText, selection = TextRange(slashStart + insertion.cursor))
         onContentChange(newText)
         showSlash = false
+    }
+
+    /** Replaces the `#tag` being typed with the chosen one. */
+    fun insertTag(option: TagComplete.Option) {
+        val at = tagStart
+        if (at < 0) return
+        val cursor = tfv.selection.start.coerceIn(0, tfv.text.length)
+        val inserted = "#" + option.tag
+        val newText = tfv.text.substring(0, at) + inserted + tfv.text.substring(cursor)
+        tfv = TextFieldValue(newText, selection = TextRange(at + inserted.length))
+        onContentChange(newText)
+        tagStart = -1
+        tagQuery = ""
     }
 
     fun onTfvChange(new: TextFieldValue) {
@@ -258,6 +290,25 @@ fun MarkdownEditor(
 
         val cursor = new.selection.start
         val text   = new.text
+
+        // `#` autocomplete. The rule for when this may open lives in
+        // TagComplete, tested there — above all it must stay shut while a
+        // heading is being written, which is most of what `#` is used for.
+        if (new.selection.collapsed && cursor <= text.length) {
+            val lineStart = text.lastIndexOf('\n', (cursor - 1).coerceAtLeast(0))
+                .let { if (it < 0) 0 else it + 1 }
+            val match = TagComplete.matchAtCursor(text.substring(lineStart, cursor))
+            if (match == null) {
+                tagStart = -1
+                tagQuery = ""
+            } else {
+                tagStart = lineStart + match.from
+                tagQuery = match.query
+            }
+        } else {
+            tagStart = -1
+            tagQuery = ""
+        }
 
         if (showSlash) {
             // Update or dismiss existing slash menu
@@ -352,6 +403,68 @@ fun MarkdownEditor(
                 onSelect  = { cmd -> insertSnippet(cmd) },
                 onDismiss = { showSlash = false },
             )
+        }
+
+        // Tag picker. Never both at once: `/` and `#` cannot be the same word.
+        AnimatedVisibility(visible = !showSlash && tagMatches.isNotEmpty()) {
+            TagPicker(
+                options   = tagMatches,
+                onSelect  = { insertTag(it) },
+                onDismiss = { tagStart = -1; tagQuery = "" },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TagPicker(
+    options: List<TagComplete.Option>,
+    onSelect: (TagComplete.Option) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        color           = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+        tonalElevation  = 3.dp,
+        modifier        = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 200.dp),
+    ) {
+        LazyColumn {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.ins_tag),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Close, null, Modifier.size(16.dp))
+                    }
+                }
+                HorizontalDivider()
+            }
+            items(options) { option ->
+                ListItem(
+                    headlineContent = { Text("#" + option.tag, style = MaterialTheme.typography.bodyMedium) },
+                    // The count is what makes the order legible, and it also
+                    // exposes a typo: a tag with one note next to one with forty
+                    trailingContent = {
+                        Text(
+                            stringResource(R.string.tag_complete_notes, option.count),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                        )
+                    },
+                    modifier = Modifier.clickable { onSelect(option) },
+                )
+            }
         }
     }
 }
@@ -489,13 +602,10 @@ private fun FormatButton(icon: ImageVector, desc: String, onClick: () -> Unit) {
 @Composable
 private fun SlashCommandPicker(
     query: String,
-    onSelect: (SlashCmd) -> Unit,
+    onSelect: (Insertables.Item) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val filtered = remember(query) {
-        if (query.isBlank()) SLASH_COMMANDS
-        else SLASH_COMMANDS.filter { it.label.lowercase().contains(query) }
-    }
+    val filtered = remember(query) { Insertables.search(query) }
 
     Surface(
         color          = MaterialTheme.colorScheme.surface,
@@ -511,7 +621,7 @@ private fun SlashCommandPicker(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "No commands for \"/$query\"",
+                    stringResource(R.string.insert_no_match),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
@@ -527,7 +637,7 @@ private fun SlashCommandPicker(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            if (query.isBlank()) "Insert…" else "Insert /$query",
+                            if (query.isBlank()) stringResource(R.string.insert_title) else "/" + query,
                             style  = MaterialTheme.typography.labelMedium,
                             color  = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f),
@@ -540,13 +650,30 @@ private fun SlashCommandPicker(
                 }
                 items(filtered) { cmd ->
                     ListItem(
-                        headlineContent = { Text(cmd.label, style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(cmd.labelRes), style = MaterialTheme.typography.bodyMedium) },
+                        // The description is what makes a feature discoverable
+                        // rather than merely re-findable by someone who already
+                        // knows it exists
+                        supportingContent = {
+                            Text(
+                                stringResource(cmd.descRes),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        },
                         leadingContent  = {
                             Icon(
-                                cmd.icon,
+                                iconFor(cmd),
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
                                 tint     = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                        trailingContent = {
+                            Text(
+                                Insertables.primarySlash(cmd),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                             )
                         },
                         modifier = Modifier.clickable { onSelect(cmd) },

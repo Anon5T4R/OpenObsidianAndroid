@@ -35,6 +35,7 @@ import com.openobsidian.android.data.AppSettings
 import com.openobsidian.android.data.LocalAppSettings
 import com.openobsidian.android.data.Node
 import com.openobsidian.android.data.Srs
+import com.openobsidian.android.data.TagComplete
 import com.openobsidian.android.data.VaultRepository
 import com.openobsidian.android.ui.components.DocxViewer
 import com.openobsidian.android.ui.components.EpubViewer
@@ -374,6 +375,10 @@ fun VaultScreen(
                             contentLoading      = state.contentLoading,
                             viewMode            = state.viewMode,
                             onContentChange     = { vm.updateContent(it) },
+                            // Inverted once per index change, not per keystroke
+                            tagCounts           = remember(state.tagsByPath) {
+                                TagComplete.countTags(state.tagsByPath)
+                            },
                             // Was an exact-name find(), so [[Nota#Seção]],
                             // [[Pasta/Nota]] and any alias did nothing at all
                             onWikilinkClick     = { target -> vm.openByLink(target) },
@@ -570,6 +575,8 @@ private fun NoteArea(
     onTocDismiss: () -> Unit = {},
     findBarOpen: Boolean = false,
     onFindBarClose: () -> Unit = {},
+    /** tag -> quantas notas a carregam, para o autocomplete do # */
+    tagCounts: Map<String, Int> = emptyMap(),
 ) {
     if (file.isPdf) {
         PdfViewer(
@@ -616,6 +623,7 @@ private fun NoteArea(
             ViewMode.EDIT -> MarkdownEditor(
                 content, onContentChange, Modifier.fillMaxSize(),
                 onImportImage          = onImportImage,
+                tagCounts              = tagCounts,
                 cursorRequest          = editorCursorRequest,
                 onCursorRequestHandled = { editorCursorRequest = null },
                 findBarVisible         = findBarOpen,
@@ -635,6 +643,7 @@ private fun NoteArea(
                     MarkdownEditor(
                         content, onContentChange, Modifier.weight(1f).fillMaxHeight(),
                         onImportImage          = onImportImage,
+                        tagCounts              = tagCounts,
                         cursorRequest          = editorCursorRequest,
                         onCursorRequestHandled = { editorCursorRequest = null },
                         findBarVisible         = findBarOpen,
