@@ -1,6 +1,6 @@
 # Plano de atualização — OpenObsidian Android
 
-> Comparativo entre o **desktop v1.2.1** (Electron) e o **Android 3.3.0**.
+> Comparativo entre o **desktop v1.2.1** (Electron) e o **Android 3.4.0**.
 > Atualizado em 2026-07-22. A versão anterior comparava com o desktop v1.0.0 e
 > tinha ficado três releases defasada — o que fazia ela mentir por omissão sobre
 > o que faltava.
@@ -36,11 +36,11 @@
 | **Botão de inserir na barra** | ✅ 3.2.0 | `/` sozinho ninguém descobre no celular |
 | **`sort: criado` com aviso quando não serve** | ✅ 3.3.0 | Fecha a divergência de gramática com o desktop |
 | Gravação atômica | ⚠️ parcial | SAF não tem substituição atômica; há cópia `.bak` antes de truncar. **Teto da plataforma, não pendência** |
-| Ler `.odt` | ❌ | **Aberto.** Porte do `main/odt.ts`: é ZIP + `content.xml`, e o leitor do `.docx` já serve de molde |
-| Embed `![[Nota]]` de nota (imagem já funciona) | ❌ | **Aberto.** Precisa de resolução de nota + guarda de ciclo, como `utils/embeds.ts` |
-| Export HTML | ❌ | **Aberto e barato** — `buildPrintHtml` já existe para o PDF |
-| `%%comentário%%` | ❌ | **Aberto e barato** — um passe no MarkdownPreview |
-| Abrir nota aleatória | ❌ | **Aberto e barato** |
+| Ler `.odt` | ✅ 3.4.0 | Parser XML escrito à mão, como no desktop: o `XmlPullParser` do Android é stub em teste unitário |
+| Embed `![[Nota]]` de nota (imagem já funciona) | ✅ 3.4.0 | Vira citação, não `<div>`: o Markwon não reprocessa HTML como Markdown |
+| Export HTML | ✅ 3.4.0 | Reusa o `buildPrintHtml` da impressão em PDF |
+| `%%comentário%%` | ✅ 3.4.0 | `data/MarkdownTransforms.kt`, com teste |
+| Abrir nota aleatória | ✅ 3.4.0 | Exclui a nota aberta do sorteio |
 | Calendário sobre as notas diárias | ❌ | Fase 3 |
 | Grafo (D3) | ❌ | **Não portar** — tentado e removido de propósito (commit 4b90284) |
 | Chat/IA local, sistema de plugins | ❌ | Fora de escopo no mobile |
