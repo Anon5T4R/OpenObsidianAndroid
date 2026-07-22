@@ -708,6 +708,48 @@ class VaultViewModel(
         VaultBackup.suggestedName(_state.value.tree?.name ?: "vault")
 
     /** Zips the vault into the destination the user picked. */
+    /**
+     * Abre uma nota qualquer do vault, menos a que já está aberta.
+     *
+     * Repetição espaçada na marra: serve para cair numa nota que você não
+     * estava procurando. Excluir a atual é o que evita o "aleatório" devolver
+     * a mesma tela e parecer que o botão não fez nada.
+     */
+    fun openRandomNote() {
+        val pool = _state.value.tree?.allMarkdownFiles.orEmpty()
+            .filter { it.uri != _state.value.activeFile?.uri }
+        if (pool.isEmpty()) {
+            toast(appContext.getString(R.string.toast_no_other_note))
+            return
+        }
+        openFile(pool.random())
+    }
+
+    /**
+     * Grava o HTML já montado no destino escolhido pelo seletor do sistema.
+     *
+     * O HTML chega pronto da tela porque é o mesmo que alimenta a impressão em
+     * PDF — uma segunda montagem aqui viraria uma segunda versão do formato,
+     * livre para divergir da que o usuário vê ao imprimir.
+     */
+    fun exportHtml(destUri: Uri, html: String, title: String) {
+        viewModelScope.launch {
+            val ok = runCatching {
+                appContext.contentResolver.openOutputStream(destUri, "wt")?.use { out ->
+                    out.write(html.toByteArray(Charsets.UTF_8))
+                } ?: error("sem stream de escrita para $destUri")
+            }
+            ok.onSuccess {
+                toast(appContext.getString(R.string.toast_export_html_done, title))
+            }.onFailure {
+                // Falha de gravação nunca é silenciosa aqui — foi a classe de
+                // bug que a 1.4.0 fechou, e exportar não é exceção
+                toast(appContext.getString(R.string.toast_export_html_failed))
+                android.util.Log.w("OpenObsidian", "export html failed", it)
+            }
+        }
+    }
+
     fun backupVault(destUri: Uri) {
         viewModelScope.launch {
             _state.update { it.copy(backingUp = true) }

@@ -288,4 +288,9 @@
     <string name="tag_complete_notes">%d notas</string>
     <string name="query_sort_no_created">sort: criado — %1$d de %2$d notas no declaran fecha de creación, así que este orden no significa nada</string>
     <string name="query_sort_not_iso">sort: criado — %1$s no es AAAA-MM-DD, y las fechas se comparan como texto; escríbela como 2026-07-21</string>
+    <string name="menu_export_html">Exportar como HTML</string>
+    <string name="menu_random_note">Abrir una nota al azar</string>
+    <string name="toast_no_other_note">No hay otra nota para abrir</string>
+    <string name="toast_export_html_done">%1$s exportada como HTML</string>
+    <string name="toast_export_html_failed">No se pudo escribir el archivo HTML</string>
 </resources>

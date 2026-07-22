@@ -87,6 +87,18 @@ fun VaultScreen(
         ActivityResultContracts.OpenDocument(),
     ) { picked -> if (picked != null) vm.readAnkiPackage(picked) }
 
+    // Exportar HTML reusa o mesmo HTML que já é montado para imprimir em PDF.
+    // O conteúdo é lido no momento do clique e guardado aqui, porque o retorno
+    // do seletor é assíncrono e a nota pode ter mudado no caminho.
+    var htmlToExport by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val htmlPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/html"),
+    ) { dest ->
+        val pending = htmlToExport
+        htmlToExport = null
+        if (dest != null && pending != null) vm.exportHtml(dest, pending.first, pending.second)
+    }
+
     // Contador, não booleano: tocar o botão duas vezes seguidas precisa abrir
     // o menu as duas vezes, e um booleano já em `true` não notificaria nada.
     var insertRequest by remember { mutableStateOf<Int?>(null) }
@@ -211,6 +223,7 @@ fun VaultScreen(
             onDiagnostics  = { vm.openDiagnostics() },
             onStats        = { vm.openStats() },
             onAnkiImport   = { ankiPicker.launch(arrayOf("*/*")) },
+            onRandomNote   = { vm.openRandomNote() },
             onBackup       = { backupPicker.launch(vm.backupFileName()) },
             templates      = state.tree?.templates ?: emptyList(),
             onCreateFromTemplate = { t, n -> vm.createFromTemplate(t, n) },
@@ -339,6 +352,16 @@ fun VaultScreen(
                                                 content = state.activeContent,
                                                 title   = state.activeFile?.displayName ?: "note",
                                             )
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text        = { Text(stringResource(R.string.menu_export_html)) },
+                                        leadingIcon = { Icon(Icons.Default.Code, contentDescription = null) },
+                                        onClick     = {
+                                            showNoteMenu = false
+                                            val title = state.activeFile?.displayName ?: "note"
+                                            htmlToExport = buildPrintHtml(state.activeContent, title) to title
+                                            htmlPicker.launch("$title.html")
                                         },
                                     )
                                 }

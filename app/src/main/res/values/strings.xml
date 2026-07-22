@@ -295,4 +295,9 @@
     <string name="tag_complete_notes">%d notes</string>
     <string name="query_sort_no_created">sort: criado — %1$d of %2$d notes do not declare a creation date, so this order is not meaningful</string>
     <string name="query_sort_not_iso">sort: criado — %1$s is not YYYY-MM-DD, and dates are compared as text; write it as 2026-07-21</string>
+    <string name="menu_export_html">Export as HTML</string>
+    <string name="menu_random_note">Open a random note</string>
+    <string name="toast_no_other_note">There is no other note to open</string>
+    <string name="toast_export_html_done">%1$s exported as HTML</string>
+    <string name="toast_export_html_failed">Could not write the HTML file</string>
 </resources>

@@ -180,6 +180,7 @@ fun FileTreeContent(
     onStats: () -> Unit = {},
     /** Abre o seletor de arquivo para importar um .apkg do Anki */
     onAnkiImport: () -> Unit = {},
+    onRandomNote: () -> Unit = {},
     templates: List<Node.File> = emptyList(),
     onCreateFromTemplate: (template: Node.File, name: String) -> Unit = { _, _ -> },
     /** Quando não-nulo, mostra um botão de recolher a barra (tela larga/paisagem). */
@@ -308,6 +309,11 @@ fun FileTreeContent(
                         text        = { Text(stringResource(R.string.menu_diagnostics)) },
                         leadingIcon = { Icon(Icons.Default.HealthAndSafety, null) },
                         onClick     = { showVaultMenu = false; onDiagnostics() },
+                    )
+                    DropdownMenuItem(
+                        text        = { Text(stringResource(R.string.menu_random_note)) },
+                        leadingIcon = { Icon(Icons.Default.Shuffle, null) },
+                        onClick     = { showVaultMenu = false; onRandomNote() },
                     )
                     DropdownMenuItem(
                         text        = { Text(stringResource(R.string.menu_backup)) },

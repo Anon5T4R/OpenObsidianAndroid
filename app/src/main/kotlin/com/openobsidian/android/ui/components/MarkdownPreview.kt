@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import com.openobsidian.android.data.LocalAppSettings
+import com.openobsidian.android.data.MarkdownTransforms
 import androidx.compose.ui.viewinterop.AndroidView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
@@ -356,6 +357,14 @@ private fun preprocessMarkdown(
     runQuery: ((String) -> Pair<List<String>, List<String>>)? = null,
 ): String = mapOutsideCodeFences(linkifyMermaid(runQueryBlocks(content, runQuery))) { segment ->
     var out = segment
+
+    // ── Comentários privados %%…%% ───────────────────────────────────────
+    // Anotação só para quem escreve: fica no arquivo e não é renderizada.
+    // Roda antes de tudo para que um comentário possa engolir sintaxe de bloco
+    // (um parágrafo inteiro, um título) sem deixar restos na tela. `DOT_MATCHES_ALL`
+    // é o que permite atravessar linhas — sem ele um comentário de dois
+    // parágrafos apareceria pela metade.
+    out = MarkdownTransforms.stripComments(out)
 
     // ── Callouts > [!tipo] Título (o sufixo +/- de colapso é ignorado) ────
     out = CALLOUT_REGEX.replace(out) { m ->
