@@ -132,6 +132,40 @@ object Srs {
         return out
     }
 
+    /**
+     * [syncFile] para o vault inteiro numa passada só.
+     *
+     * O laço nota a nota copiava o mapa completo de cards a cada chamada —
+     * O(notas × cards), que na thread principal congelava a interface a cada
+     * autosave num vault grande. Aqui o custo é uma passada pelos cards e uma
+     * pelos encontrados. As regras são as mesmas do syncFile: nota varrida sem
+     * o card → card sai; nota que não está em [foundByFile] (ilegível nesta
+     * passada) → o cronograma dela fica como está.
+     */
+    fun syncVault(
+        cards: Map<String, Card>,
+        foundByFile: Map<String, List<Pair<String, String>>>, // arquivo → (id, pergunta)
+        today: LocalDate = LocalDate.now(),
+    ): Map<String, Card> {
+        val idsByFile = HashMap<String, HashSet<String>>(foundByFile.size)
+        for ((file, found) in foundByFile) {
+            idsByFile[file] = found.mapTo(HashSet(found.size)) { it.first }
+        }
+        val out = LinkedHashMap<String, Card>(cards.size + 16)
+        for ((id, c) in cards) {
+            val scanned = idsByFile[c.file]
+            if (scanned != null && id !in scanned) continue
+            out[id] = c
+        }
+        for ((file, found) in foundByFile) {
+            for ((id, q) in found) {
+                val existing = out[id]
+                out[id] = existing?.copy(q = q, file = file) ?: newCard(file, q, today)
+            }
+        }
+        return out
+    }
+
     // ── Storage ───────────────────────────────────────────────────────────
     //
     // Scheduling lives in `.openobsidian/srs.json`, never inside the notes: it

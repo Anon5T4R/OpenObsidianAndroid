@@ -77,6 +77,26 @@ object TagComplete {
         return Match(from, m.groupValues[1])
     }
 
+    /**
+     * [matchAtCursor] over the whole editor text: slices the line up to the
+     * cursor and returns the match with `from` as an absolute offset.
+     *
+     * The slicing lives here, tested, because it crashed the app once: with
+     * the cursor at 0 the editor searched for `\n` *at* index 0 instead of
+     * before it, and a text starting with a newline — what backspacing away
+     * the first line of a note leaves behind — produced `substring(1, 0)`.
+     */
+    fun matchInEditor(text: String, cursor: Int): Match? {
+        if (cursor < 0 || cursor > text.length) return null
+        // At cursor 0 there is nothing before the cursor to search in;
+        // lastIndexOf with a negative start returns -1, which is the same "no
+        // newline" case as a first line.
+        val lineStart = text.lastIndexOf('\n', cursor - 1)
+            .let { if (it < 0) 0 else it + 1 }
+        val m = matchAtCursor(text.substring(lineStart, cursor)) ?: return null
+        return Match(lineStart + m.from, m.query)
+    }
+
     private fun startsTag(before: Char): Boolean =
         before.isWhitespace() || before == '(' || before == '>'
 }

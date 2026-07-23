@@ -72,6 +72,44 @@ deixando o cursor no meio de uma palavra, de modo que a primeira tecla destruía
 o trecho recém-inserido. Marcador não tem como ser contado errado. Se o desktop
 for retocado algum dia, é para cá que ele deve olhar.
 
+## A rodada 3.4.1 — o crash de digitação e as perdas de dados
+
+O relato era "o app minimiza ou fecha depois de um backspace ou de pouco tempo
+digitando, e às vezes perde o que foi escrito". Eram quatro defeitos que se
+somavam:
+
+1. **Crash do backspace** (o principal): o autocomplete de `#` recortava a
+   linha até o cursor procurando `\n` *no* índice 0 em vez de antes dele
+   (`coerceAtLeast(0)`). Apagar o último caractere da primeira linha de uma
+   nota com mais linhas — reescrever o título — deixava o texto começando em
+   `\n` com o cursor em 0 e caía num `substring(1, 0)`. O recorte foi movido
+   para `TagComplete.matchInEditor`, onde há teste de regressão.
+2. **Autosave que nunca dispara**: o debounce de 1,5 s reiniciava a cada
+   tecla; quem digita sem pausa fica minutos sem um único save, e o crash do
+   item 1 levava tudo. Agora há um teto: sujo há mais de 10 s, salva no meio
+   da digitação.
+3. **Nada salvava ao ir pra background**: o Android mata processo em segundo
+   plano como rotina, e um autosave ainda no delay morria junto. A tela agora
+   dá flush no `ON_PAUSE` (e o selo "não salvo" só sai se o que foi gravado
+   ainda é o que está na tela).
+4. **`syncCards` na thread principal**: rodava depois de *cada* autosave, com
+   regex de cards no vault inteiro e uma cópia completa do mapa por nota
+   (`syncFile` é O(notas × cards) quando aplicado em laço). Num vault grande
+   isso congelava a UI logo após parar de digitar — digitar durante o
+   congelamento acumulava input até o sistema derrubar por ANR, que na tela é
+   "o app fechou sozinho". Foi para `Dispatchers.Default`, e `Srs.syncVault`
+   faz a reconciliação numa passada só (com teste afirmando que o resultado é
+   idêntico ao laço de `syncFile`).
+
+De brinde: o cache do realce de sintaxe usava `" "` como sentinela de "nada
+cacheado" e devolvia `null!!` para uma nota cujo conteúdo fosse exatamente um
+espaço.
+
+**Se algo se perdeu num crash durante a gravação:** a cópia `.<nome>.bak` fica
+como irmã oculta da nota (só é apagada quando a gravação confirma). Um crash no
+meio do truncamento deixa o `.bak` lá — vale procurar por eles antes de dar o
+conteúdo por perdido.
+
 ## Lição desta rodada
 
 Um `replace` por script disse "ok" e não sobreviveu ao arquivo: a linha que

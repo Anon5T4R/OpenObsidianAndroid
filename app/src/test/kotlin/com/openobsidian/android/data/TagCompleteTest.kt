@@ -148,4 +148,32 @@ class TagCompleteTest {
     fun `only looks at the tag touching the cursor`() {
         assertEquals("sis-car", q("#tipo-patologia #sis-car"))
     }
+
+    // ── matchInEditor: o recorte da linha, que já derrubou o app ─────────────
+
+    @Test
+    fun `survives the cursor at zero with the text starting on a newline`() {
+        // Backspace apagando o último caractere da primeira linha deixa a nota
+        // começando em \n com o cursor em 0. O recorte antigo procurava o \n
+        // NO índice 0 em vez de antes dele e caía num substring(1, 0).
+        assertNull(TagComplete.matchInEditor("\nsegunda linha", 0))
+        assertNull(TagComplete.matchInEditor("\n#tag", 0))
+    }
+
+    @Test
+    fun `finds the tag with an absolute offset across lines`() {
+        val text = "primeira\ntexto #sis"
+        assertEquals(TagComplete.Match(15, "sis"), TagComplete.matchInEditor(text, text.length))
+    }
+
+    @Test
+    fun `only sees the current line, so the previous line's tag is not it`() {
+        assertNull(TagComplete.matchInEditor("#sis\ntexto", 10))
+    }
+
+    @Test
+    fun `an out of range cursor is a no, not a crash`() {
+        assertNull(TagComplete.matchInEditor("abc", -1))
+        assertNull(TagComplete.matchInEditor("abc", 4))
+    }
 }

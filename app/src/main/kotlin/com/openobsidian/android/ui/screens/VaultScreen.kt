@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.openobsidian.android.R
 import com.openobsidian.android.data.AppSettings
@@ -110,6 +112,13 @@ fun VaultScreen(
     // Auto-close drawer when file opens (phone only)
     LaunchedEffect(state.activeFile) {
         if (!isTablet && state.activeFile != null && drawerState.isOpen) drawerState.close()
+    }
+
+    // Ir para o background grava o que estiver sujo. Em background o Android
+    // mata o processo como rotina, e um autosave ainda esperando o debounce
+    // morre junto — trocar de app logo depois de digitar perdia a edição.
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        vm.flushDirty()
     }
 
     // ── Search overlay (covers everything) ────────────────────────────────

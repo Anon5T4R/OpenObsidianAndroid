@@ -311,15 +311,15 @@ fun MarkdownEditor(
         // `#` autocomplete. The rule for when this may open lives in
         // TagComplete, tested there — above all it must stay shut while a
         // heading is being written, which is most of what `#` is used for.
+        // The line slicing lives there too: done here it crashed the app when
+        // backspace left the note starting with a newline (substring(1, 0)).
         if (new.selection.collapsed && cursor <= text.length) {
-            val lineStart = text.lastIndexOf('\n', (cursor - 1).coerceAtLeast(0))
-                .let { if (it < 0) 0 else it + 1 }
-            val match = TagComplete.matchAtCursor(text.substring(lineStart, cursor))
+            val match = TagComplete.matchInEditor(text, cursor)
             if (match == null) {
                 tagStart = -1
                 tagQuery = ""
             } else {
-                tagStart = lineStart + match.from
+                tagStart = match.from
                 tagQuery = match.query
             }
         } else {
@@ -710,11 +710,15 @@ private class MarkdownHighlightTransformation(
     private val colors: ColorScheme,
 ) : VisualTransformation {
 
-    private var cachedText   = " "
+    // Null text as the "nothing cached" sentinel. It used to be " ", which
+    // meant a first call with a one-space note returned the null cache with
+    // `!!` — a crash for opening a note whose content is exactly one space.
+    private var cachedText: String? = null
     private var cachedResult: TransformedText? = null
 
     override fun filter(text: AnnotatedString): TransformedText {
-        if (text.text == cachedText) return cachedResult!!
+        val cached = cachedResult
+        if (cached != null && text.text == cachedText) return cached
         val result = buildResult(text.text)
         cachedText   = text.text
         cachedResult = result

@@ -221,18 +221,29 @@ class VaultViewModel(
 
     // ── Edit ──────────────────────────────────────────────────────────────
 
+    /** Quando a nota ficou suja pela primeira vez desde o último save. */
+    private var dirtySince = 0L
+
     fun updateContent(text: String) {
         val s0 = _state.value
         val file = s0.activeFile ?: return
         // What was never read must not be overwritten
         if (s0.unreadable) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!s0.isDirty) dirtySince = now
         _state.update { s ->
             val newCache = s.contentCache + (file.uri.toString() to text)
             s.copy(activeContent = text, isDirty = true, contentCache = newCache)
         }
         autosaveJob?.cancel()
+        // O debounce sozinho nunca dispara enquanto se digita sem pausa — cada
+        // tecla o reinicia. Uma escrita longa e contínua ficava minutos sem um
+        // único save, a um crash de distância de se perder inteira. Passado o
+        // teto, o save acontece já, no meio da digitação.
+        val overdue = now - dirtySince >= 10_000
+        if (overdue) dirtySince = now
         autosaveJob = viewModelScope.launch {
-            delay(1_500)
+            if (!overdue) delay(1_500)
             saveCurrentFile()
         }
     }
@@ -885,13 +896,28 @@ class VaultViewModel(
 
     // ── Private helpers ───────────────────────────────────────────────────
 
-    private fun flushDirty() {
+    /**
+     * Grava o que estiver sujo, sem debounce. Público porque a tela chama no
+     * ON_PAUSE: em background o Android mata o processo como rotina, e um
+     * autosave ainda no delay morre junto — era uma das perdas de dados.
+     */
+    fun flushDirty() {
         autosaveJob?.cancel()
         val s = _state.value
         if (!s.isDirty || s.activeFile == null || s.unreadable) return
         val file = s.activeFile
         val content = s.activeContent
-        viewModelScope.launch { writeNote(file, content) }
+        viewModelScope.launch {
+            val ok = writeNote(file, content)
+            // O selo "não salvo" só sai se o que foi gravado ainda é o que
+            // está na tela — na navegação a nota ativa já trocou e o estado
+            // novo não é deste save.
+            if (ok) _state.update {
+                if (it.activeFile?.uri == file.uri && it.activeContent == content)
+                    it.copy(isDirty = false, saveError = null)
+                else it
+            }
+        }
     }
 
     // ── Flashcards ────────────────────────────────────────────────────────
@@ -907,12 +933,21 @@ class VaultViewModel(
         val tree = _state.value.tree ?: return
         viewModelScope.launch {
             val stored = SrsStore.load(appContext, tree.rootUri)
-            var cards = stored
-            for (file in tree.allMarkdownFiles) {
-                val text = _state.value.contentCache[file.uri.toString()]
-                    ?: SafFs.readTextOrNull(appContext, file.uri) ?: continue
-                val found = Cards.extractCards(file.relativePath, text).map { it.id to it.q }
-                cards = Srs.syncFile(cards, file.relativePath, found)
+            val cache = _state.value.contentCache
+            // Fora da main thread: isto roda depois de CADA autosave, e o laço
+            // antigo — regex de cards no vault inteiro, mais uma cópia completa
+            // do mapa por nota dentro do syncFile — congelava a UI por segundos
+            // num vault grande. Digitar durante o congelamento acumulava input
+            // até o sistema derrubar o app por ANR.
+            val cards = withContext(Dispatchers.Default) {
+                val foundByFile = HashMap<String, List<Pair<String, String>>>()
+                for (file in tree.allMarkdownFiles) {
+                    val text = cache[file.uri.toString()]
+                        ?: SafFs.readTextOrNull(appContext, file.uri) ?: continue
+                    foundByFile[file.relativePath] =
+                        Cards.extractCards(file.relativePath, text).map { it.id to it.q }
+                }
+                Srs.syncVault(stored, foundByFile)
             }
             srsCards = cards
             if (cards != stored) SrsStore.save(appContext, tree.rootUri, cards)

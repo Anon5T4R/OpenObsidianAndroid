@@ -109,6 +109,40 @@ class SrsTest {
     }
 
     @Test
+    fun `syncVault agrees with syncFile applied note by note`() {
+        val idA = Cards.cardId("a.md", "qa")
+        val idB = Cards.cardId("b.md", "qb")
+        val stored = mapOf(
+            idA to Srs.grade(Srs.newCard("a.md", "qa", today), Srs.Grade.EASY, today),
+            idB to Srs.newCard("b.md", "qb", today),
+            "orfao" to Srs.newCard("sumida.md", "q", today),
+        )
+        val foundByFile = mapOf(
+            "a.md" to listOf(idA to "qa editada"),   // resposta editada: agenda fica
+            "b.md" to emptyList<Pair<String, String>>(), // card removido da nota
+            "c.md" to listOf("novo" to "q nova"),    // card novo
+        )
+        val sequential = foundByFile.entries.fold(stored) { acc, (file, found) ->
+            Srs.syncFile(acc, file, found, today)
+        }
+        assertEquals(sequential, Srs.syncVault(stored, foundByFile, today))
+    }
+
+    @Test
+    fun `syncVault keeps cards of notes it did not scan`() {
+        val stored = mapOf("x" to Srs.newCard("ilegivel.md", "q", today))
+        assertEquals(stored, Srs.syncVault(stored, mapOf("outra.md" to emptyList()), today))
+    }
+
+    @Test
+    fun `syncVault keeps the schedule when only the answer changed`() {
+        val id = Cards.cardId("n.md", "Pergunta?")
+        val graded = Srs.grade(Srs.newCard("n.md", "Pergunta?", today), Srs.Grade.EASY, today)
+        val after = Srs.syncVault(mapOf(id to graded), mapOf("n.md" to listOf(id to "Pergunta?")), today)
+        assertEquals(graded.due, after.getValue(id).due)
+    }
+
+    @Test
     fun `state survives a round trip through json`() {
         val cards = mapOf("id1" to Srs.newCard("n.md", "q", today).copy(reps = 3, ease = 2.15))
         val back = Srs.fromJson(Srs.toJson(cards))
